@@ -1,9 +1,7 @@
 # TODO: Replace with your team name
 
 ## Our Team
-#Viviana V. Ramos Vivoni
-
-TODO: Replace with your team members
+Viviana V. Ramos Vivoni, Adaora Michelle Igwe
 
 ## How to run the streamlit app
 
