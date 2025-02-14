@@ -66,7 +66,7 @@ be whatever you want! The first two lines here are **bash variables**: if you se
 
 ```shell
 PROJECT_ID=vivianaramos6techx25  # run this line in the terminal after adding your project name
-SERVICE_NAME=team-A3  # run this line in the terminal after adding your team's service name
+SERVICE_NAME=teamA3  # run this line in the terminal after adding your team's service name
 
 # run the below command exactly (do not change anything!) the bash variables set above will get populated here
 gcloud builds submit --tag gcr.io/${PROJECT_ID}/${SERVICE_NAME}
