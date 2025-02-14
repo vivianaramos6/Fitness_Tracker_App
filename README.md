@@ -65,8 +65,8 @@ name with your info. Your service name is the name of your webapp or project and
 be whatever you want! The first two lines here are **bash variables**: if you set bash variables, the rest of the commands can be copy-pasted exactly, without replacing anything!
 
 ```shell
-PROJECT_ID=your-cloud-project-name  # run this line in the terminal after adding your project name
-SERVICE_NAME=your-team-service-name  # run this line in the terminal after adding your team's service name
+PROJECT_ID=vivianaramos6techx25  # run this line in the terminal after adding your project name
+SERVICE_NAME=team-A3  # run this line in the terminal after adding your team's service name
 
 # run the below command exactly (do not change anything!) the bash variables set above will get populated here
 gcloud builds submit --tag gcr.io/${PROJECT_ID}/${SERVICE_NAME}
