@@ -1,7 +1,7 @@
 # TODO: Replace with your team name
 
 ## Our Team
-Viviana V. Ramos Vivoni, Adaora Michelle Igwe, Amanda Chinaza Eni
+Viviana V. Ramos Vivoni, Adaora Michelle Igwe, Amanda Chinaza Eni, Melanie Jackson
 
 ## How to run the streamlit app
 
