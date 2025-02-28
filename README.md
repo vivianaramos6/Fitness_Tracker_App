@@ -1,4 +1,4 @@
-# TODO: Replace with your team name
+# Mauve Team
 
 ## Our Team
 Viviana V. Ramos Vivoni, Adaora Michelle Igwe, Amanda Chinaza Eni, Melanie Jackson
