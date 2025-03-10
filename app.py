@@ -90,7 +90,11 @@ def display_home_page():
 def display_activity_summary_page():
     """Displays the activity summary page."""
     st.title('Activity Summary')
-    # Placeholder
+    # Fetch workout data for the user
+    workouts_list = get_user_workouts(userId)
+
+    # Call the display_activity_summary function with the workouts_list
+    display_activity_summary(workouts_list)
     
 
 def display_recent_workouts_page():
