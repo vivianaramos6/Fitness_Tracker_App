@@ -62,7 +62,8 @@ def display_activity_summary_page():
 def display_recent_workouts_page():
     """Displays the recent workouts page."""
     st.title('Recent Workouts')
-    # Placeholder
+    workouts_list = get_user_workouts(userId)
+    display_recent_workouts(workouts_list)
 
 def display_genai_advice_page():
     """Displays the GenAI advice page."""

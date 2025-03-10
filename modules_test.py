@@ -134,9 +134,14 @@ class TestDisplayGenAiAdvice(unittest.TestCase):
 class TestDisplayRecentWorkouts(unittest.TestCase):
     """Tests the display_recent_workouts function."""
 
-    def test_foo(self):
-        """Tests foo."""
-        pass
+    def test_empty_workouts_list(self):
+        at = AppTest.from_function(display_recent_workouts, args=([],))
+        at.run()
+        self.assertFalse(at.exception)
+        at.header[0].value == 'Recent Workouts'
+        at.markdown == ""
+
+   
 
 
 if __name__ == "__main__":
