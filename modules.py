@@ -9,6 +9,9 @@
 
 from internals import create_component
 import streamlit as st
+from datetime import datetime, timedelta
+import pandas as pd
+from data_fetcher import get_user_posts, get_genai_advice, get_user_profile, get_user_sensor_data, get_user_workouts
 
 
 # This one has been written for you as an example. You may change it as wanted.
@@ -56,12 +59,41 @@ def display_post(username, user_image, timestamp, content, post_image):
         
 
 def display_activity_summary(workouts_list):
-    """Write a good docstring here."""
-    pass
+    """
+    Displays a summary of the user's workout activity.
 
+    This function takes a list of workout dictionaries and calculates key metrics 
+    These tests were generated and refined by Gemini
+    https://gemini.google.com/app/e59ba99961bd1367
+    
+    Args:
+        user_id (str): The ID of the user whose activity summary is to be displayed.
+    """
+    import streamlit as st
+    import pandas as pd
 
+    if not workouts_list:
+        st.write("No workout data available.")
+        return
 
+    st.markdown("<h2 style='text-align: center; color: white;'>OVERVIEW</h2>", unsafe_allow_html=True)
+    st.markdown("<hr style='border: 1px solid #e0e0e0;'>", unsafe_allow_html=True)
 
+    for i, workout in enumerate(workouts_list):
+        st.markdown(f"<h3>Workout {i+1} Summary</h3>", unsafe_allow_html=True)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"*Steps*<br>{workout['steps']}", unsafe_allow_html=True)
+            st.markdown(f"*Calories Burned*<br>{workout['calories_burned']}", unsafe_allow_html=True)
+            st.markdown(f"*Start Coordinates*<br>({workout['start_lat_lng'][0]}, {workout['start_lat_lng'][1]})", unsafe_allow_html=True)
+
+        with col2:
+            st.markdown(f"*Distance (km)*<br>{workout['distance']}", unsafe_allow_html=True)
+            st.markdown(f"*Time Spent*<br>60 min 0 sec", unsafe_allow_html=True)  # Assuming 60 minutes for now
+            st.markdown(f"*End Coordinates*<br>({workout['end_lat_lng'][0]}, {workout['end_lat_lng'][1]})", unsafe_allow_html=True)
+
+        st.markdown("<hr style='border: 1px solid #e0e0e0;'>", unsafe_allow_html=True)
 
 def display_recent_workouts(workouts_list):
     """Displays a 'recent workouts' component that showcases a user's recent workout history.
@@ -149,3 +181,13 @@ def display_recent_workouts(workouts_list):
 def display_genai_advice(timestamp, content, image):
     """Write a good docstring here."""
     pass
+
+
+# if __name__ == "__main__":
+#     # st.title("Test Display Activity Summary")
+#     user_id = "user1"
+#     workouts_list = get_user_workouts(user_id)
+#     if workouts_list:
+#         display_activity_summary(workouts_list)
+#     else:
+#         st.warning("No workout data available.")

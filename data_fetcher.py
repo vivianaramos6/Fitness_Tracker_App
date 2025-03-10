@@ -145,3 +145,4 @@ def get_genai_advice(user_id):
         'content': advice,
         'image': image,
     }
+    

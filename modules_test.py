@@ -7,6 +7,7 @@
 #############################################################################
 
 import unittest
+import streamlit as st
 import pytest
 import streamlit as st
 from io import StringIO
@@ -120,13 +121,55 @@ class TestDisplayPost(unittest.TestCase):
         return " ".join(html.split()).replace("> <", "><")
 
 
+
+
 class TestDisplayActivitySummary(unittest.TestCase):
-    """Tests the display_activity_summary function."""
+    """Tests the display_activity_summary function.
+       These tests were generated and refined by Gemini
+       https://gemini.google.com/app/e59ba99961bd1367"""
 
-    def test_foo(self):
-        """Tests foo."""
-        pass
+    def test_no_workout_data(self):
+        """
+        Test that the function displays the correct message when no workout data is available.
+        """
+        at = AppTest.from_function(display_activity_summary, args=([],))
+        at.run()
+        self.assertEqual(at.markdown[0].value, "No workout data available.")
 
+    def test_workout_data_display(self):
+        """
+        Test that the function correctly displays the workout summaries and past workouts table.
+        """
+        workouts_list = [
+            {
+                'workout_id': 'workout1',
+                'start_timestamp': '2024-01-01 00:00:00',
+                'end_timestamp': '2024-01-01 00:30:00',
+                'start_lat_lng': (1.23, 4.56),
+                'end_lat_lng': (7.89, 0.12),
+                'distance': 5.0,
+                'steps': 10000,
+                'calories_burned': 250
+            },
+            {
+                'workout_id': 'workout2',
+                'start_timestamp': '2024-01-02 00:00:00',
+                'end_timestamp': '2024-01-02 00:30:00',
+                'start_lat_lng': (3.45, 6.78),
+                'end_lat_lng': (9.01, 2.34),
+                'distance': 8.0,
+                'steps': 15000,
+                'calories_burned': 400
+            }
+        ]
+
+        at = AppTest.from_function(display_activity_summary, args=(workouts_list,))
+        at.run()
+
+        self.assertIn("Workout 1 Summary", at.markdown[2].value)
+        self.assertIn("*Steps*<br>10000", at.markdown[3].value)
+        self.assertIn("Workout 2 Summary", at.markdown[10].value)
+        self.assertIn("*Steps*<br>15000", at.markdown[11].value)
 
 class TestDisplayGenAiAdvice(unittest.TestCase):
     """Tests the display_genai_advice function."""
@@ -157,9 +200,6 @@ class TestDisplayRecentWorkouts(unittest.TestCase):
         self.assertFalse(at.exception)
         at.header[0].value == 'Recent Workouts'
         at.markdown == ""
-
-   
-
 
 if __name__ == "__main__":
     unittest.main()
