@@ -7,7 +7,7 @@
 
 import streamlit as st
 from modules import display_my_custom_component, display_post, display_genai_advice, display_activity_summary, display_recent_workouts
-from data_fetcher import get_user_posts, get_genai_advice, get_user_profile, get_user_sensor_data, get_user_workouts
+from data_fetcher import get_user_posts, get_genai_advice, get_user_profile, get_user_sensor_data, get_user_workouts, users
 
 userId = 'user1'
 
@@ -44,13 +44,15 @@ def display_home_page():
     placeholder_post_image = 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80'
 
     for post in user_posts:
-        # users[user_id]['username']
+        user_id = post.get('user_id', 'Unknown User')
+        username = users.get(user_id, {}).get('username', 'Unknown User')
+ 
         display_post(
-            username=post.get('user_id', 'Unknown User'),
-            user_image=user_profile['profile_image'], 
+            username=username,  # Use the fetched username
+            user_image=user_profile['profile_image'],  # Use the profile image from user profile
             timestamp=post.get('timestamp', ''),
             content=post.get('content', ''),
-            post_image=placeholder_post_image 
+            post_image=placeholder_post_image  # Use the placeholder image URL
         )
 
 def display_activity_summary_page():
