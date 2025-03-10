@@ -46,7 +46,7 @@ def display_home_page():
     for post in user_posts:
         user_id = post.get('user_id', 'Unknown User')
         username = users.get(user_id, {}).get('username', 'Unknown User')
-
+ 
         display_post(
             username=username,  # Use the fetched username
             user_image=user_profile['profile_image'],  # Use the profile image from user profile
