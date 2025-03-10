@@ -7,8 +7,13 @@
 #############################################################################
 
 import unittest
+import pytest
+import streamlit as st
+from io import StringIO
+from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
 from modules import display_post, display_activity_summary, display_genai_advice, display_recent_workouts
+from data_fetcher import get_user_posts, get_genai_advice, get_user_profile, get_user_sensor_data, get_user_workouts
 
 # Write your tests below
 
@@ -126,9 +131,21 @@ class TestDisplayActivitySummary(unittest.TestCase):
 class TestDisplayGenAiAdvice(unittest.TestCase):
     """Tests the display_genai_advice function."""
 
-    def test_foo(self):
-        """Tests foo."""
-        pass
+    # Test the session state messages being updated
+    def test_session_state_messages(self):
+        # Initialize session state for messages
+        if 'messages' not in st.session_state:
+            st.session_state['messages'] = []
+
+        user_input = "I need advice"
+        st.session_state['messages'].append(f"You: {user_input}")
+    
+        # Simulate bot's response
+        st.session_state['messages'].append("Bot: Here's your advice!")
+
+        # Check that the message was added to the session state
+        assert "You: I need advice" in st.session_state['messages']
+        assert "Bot: Here's your advice!" in st.session_state['messages']
 
 
 class TestDisplayRecentWorkouts(unittest.TestCase):

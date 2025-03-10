@@ -30,6 +30,7 @@ def display_app_page():
     with tabs[2]:
         display_recent_workouts_page()
     with tabs[3]:
+        st.title("Gen Ai Advice")
         #smaller left hand side and the larger right hand side. If the left hand side is less than 2, it would squish the words
         col1, col2 = st.columns([2, 4])  
 
