@@ -30,7 +30,38 @@ def display_app_page():
     with tabs[2]:
         display_recent_workouts_page()
     with tabs[3]:
-        display_genai_advice_page()
+        #smaller left hand side and the larger right hand side. If the left hand side is less than 2, it would squish the words
+        col1, col2 = st.columns([2, 4])  
+
+        #Left hand side shows the previous advice and new chat (this isnt implemented yet)
+        with col1:
+            st.header("Advice")
+            if st.button("Previous Advice"):
+                st.write("Click to acess previous advice")
+            if st.button("New Advice"):
+                st.write("click to generate new advice")
+
+        with col2:
+            advice_container = st.container()  
+            if 'messages' not in st.session_state:
+                st.session_state['messages'] = []
+            #labels the user and user input varibale
+            user_input = st.text_input("You: ", "")
+
+            if user_input:
+                st.session_state.messages.append(f"You: {user_input}")
+                
+                #displaying the advice at the top after the user enters that they need fitness advvice
+                if "advice" in user_input.lower():
+                    #used gen ai to get information from datafetcher
+                    advice_data = get_genai_advice(user_id=1)  # Assuming user_id = 1 for now
+
+                    timestamp = advice_data['timestamp']
+                    content = advice_data['content']
+                    image = 'https://plus.unsplash.com/premium_photo-1669048780129-051d670fa2d1?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+                    with advice_container: 
+                        display_genai_advice(timestamp,content, image)
+                
 
 
 def display_home_page():
@@ -67,10 +98,21 @@ def display_recent_workouts_page():
     workouts_list = get_user_workouts(userId)
     display_recent_workouts(workouts_list)
 
-def display_genai_advice_page():
-    """Displays the GenAI advice page."""
-    st.title('GenAI Advice')
-    # Placeholder
+def display_genai_advice(timestamp, content, image=None):
+    st.header("Gen Ai Advice")
+    st.subheader(f"Timestamp: {timestamp}")
+    #st.write(content)
+    #Making the content a mauve color background to match the website theme. Used gen ai to create this code for the color
+    #cant use write content because content variable is already used in the markdown
+    st.markdown(f"""
+        <div style='background-color: #E0B0FF; padding: 10px; border-radius: 15px; margin: 10px 0;'>
+            <p style='color: white;'>{content}</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    #uploads the image if there is one 
+    if image:
+        st.image(image)
 
 
 
