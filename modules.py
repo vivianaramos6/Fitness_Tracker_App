@@ -8,6 +8,7 @@
 #############################################################################
 
 from internals import create_component
+import streamlit as st
 
 
 # This one has been written for you as an example. You may change it as wanted.
@@ -30,9 +31,29 @@ def display_my_custom_component(value):
 
 
 def display_post(username, user_image, timestamp, content, post_image):
-    """Write a good docstring here."""
-    pass
+    """Displays a single user post with the provided details.
 
+    Args:
+        username (str): The username of the poster.
+        user_image (str): URL or path to the user's profile image.
+        timestamp (str): The timestamp of the post.
+        content (str): The text content of the post.
+        post_image (str): URL or path to the image attached to the post.
+    """
+    import streamlit as st
+    # Render the post as HTML using st.markdown
+    html = f"""
+    <div style="margin-bottom: 20px;">
+        <img src="{user_image}" width="50" style="border-radius: 50%;" />
+        <strong>{username}</strong>
+        <div style="font-size: 0.9em; color: gray;">{timestamp}</div>
+        <p>{content}</p>
+        {f'<img src="{post_image}" style="max-width: 100%;" />' if post_image else ''}
+        <hr />
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+        
 
 def display_activity_summary(workouts_list):
     """Write a good docstring here."""
