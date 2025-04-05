@@ -10,36 +10,36 @@
 
 import random
 
-users = {
-    'user1': {
-        'full_name': 'Remi',
-        'username': 'remi_the_rems',
-        'date_of_birth': '1990-01-01',
-        'profile_image': 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Puma_shoes.jpg',
-        'friends': ['user2', 'user3', 'user4'],
-    },
-    'user2': {
-        'full_name': 'Blake',
-        'username': 'blake',
-        'date_of_birth': '1990-01-01',
-        'profile_image': 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Puma_shoes.jpg',
-        'friends': ['user1'],
-    },
-    'user3': {
-        'full_name': 'Jordan',
-        'username': 'jordanjordanjordan',
-        'date_of_birth': '1990-01-01',
-        'profile_image': 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Puma_shoes.jpg',
-        'friends': ['user1', 'user4'],
-    },
-    'user4': {
-        'full_name': 'Gemmy',
-        'username': 'gems',
-        'date_of_birth': '1990-01-01',
-        'profile_image': 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Puma_shoes.jpg',
-        'friends': ['user1', 'user3'],
-    },
-}
+# users = {
+#     'user1': {
+#         'full_name': 'Remi',
+#         'username': 'remi_the_rems',
+#         'date_of_birth': '1990-01-01',
+#         'profile_image': 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Puma_shoes.jpg',
+#         'friends': ['user2', 'user3', 'user4'],
+#     },
+#     'user2': {
+#         'full_name': 'Blake',
+#         'username': 'blake',
+#         'date_of_birth': '1990-01-01',
+#         'profile_image': 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Puma_shoes.jpg',
+#         'friends': ['user1'],
+#     },
+#     'user3': {
+#         'full_name': 'Jordan',
+#         'username': 'jordanjordanjordan',
+#         'date_of_birth': '1990-01-01',
+#         'profile_image': 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Puma_shoes.jpg',
+#         'friends': ['user1', 'user4'],
+#     },
+#     'user4': {
+#         'full_name': 'Gemmy',
+#         'username': 'gems',
+#         'date_of_birth': '1990-01-01',
+#         'profile_image': 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Puma_shoes.jpg',
+#         'friends': ['user1', 'user3'],
+#     },
+# }
 
 
 def get_user_sensor_data(user_id, workout_id):
@@ -97,32 +97,133 @@ def get_user_workouts(user_id):
 
 
 def get_user_profile(user_id):
-    """Returns information about the given user.
-
-    This function currently returns random data. You will re-write it in Unit 3.
+    """Returns profile information for a given user including their friends list.
+    
+    Args:
+        user_id (str): The ID of the user whose profile we want to retrieve
+        
+    Returns:
+        dict: A dictionary with keys:
+              - full_name
+              - username
+              - date_of_birth (as string)
+              - profile_image
+              - friends (list of friend user_ids)
     """
-    if user_id not in users:
-        raise ValueError(f'User {user_id} not found.')
-    return users[user_id]
+
+    from google.cloud import bigquery
+    from google.api_core.exceptions import GoogleAPIError
+
+    # Initialize BigQuery client with explicit project ID
+    client = bigquery.Client(project="vivianaramos6techx25")  
+
+    profile_query = f"""
+        SELECT 
+            Name as full_name,
+            Username as username,
+            CAST(DateOfBirth AS STRING) as date_of_birth,
+            ImageUrl as profile_image
+        FROM 
+            `{client.project}.ISE.Users`
+        WHERE 
+            UserId = '{user_id}'
+    """
+
+    # Query to get friends list
+    friends_query = f"""
+        SELECT 
+            CASE
+                WHEN UserId1 = '{user_id}' THEN UserId2
+                ELSE UserId1
+            END as friend_id
+        FROM 
+            `{client.project}.ISE.Friends`
+        WHERE 
+            UserId1 = '{user_id}' OR UserId2 = '{user_id}'
+    """
+    
+    # Execute queries...
+    profile_job = client.query(profile_query)
+    profile_result = list(profile_job.result())
+    
+    if not profile_result:
+        return None  # User not found
+    
+    # Execute friends query
+    friends_job = client.query(friends_query)
+    friends_result = list(friends_job.result())
+    
+    # Prepare the result dictionary
+    user_profile = {
+        'full_name': profile_result[0].full_name,
+        'username': profile_result[0].username,
+        'date_of_birth': profile_result[0].date_of_birth,
+        'profile_image': profile_result[0].profile_image,
+        'friends': [row.friend_id for row in friends_result]
+    }
+    
+    return user_profile
+
 
 
 def get_user_posts(user_id):
-    """Returns a list of a user's posts.
-
-    This function currently returns random data. You will re-write it in Unit 3.
+    """Returns a list of a user's posts from the database.
+    
+    Args:
+        user_id (str): The ID of the user whose posts we want to retrieve
+        
+    Returns:
+        list: A list of dictionaries, where each dictionary represents a post with keys:
+              user_id, post_id, timestamp, content, and image
     """
-    content = random.choice([
-        'Had a great workout today!',
-        'The AI really motivated me to push myself further, I ran 10 miles!',
-    ])
-    return [{
-        'user_id': user_id,
-        'post_id': 'post1',
-        'timestamp': '2024-01-01 00:00:00',
-        'content': content,
-        'image': 'image_url',
-    }]
+    from google.cloud import bigquery
+    from google.api_core.exceptions import GoogleAPICallError, NotFound, BadRequest
+    import logging
 
+    # Initialize BigQuery client with explicit project
+    client = bigquery.Client(project="vivianaramos6techx25")
+    
+    # Query to get posts for the specified user
+    query = f"""
+        SELECT 
+            p.PostId as post_id,
+            p.AuthorId as user_id,
+            p.Timestamp as timestamp,
+            p.Content as content,
+            p.ImageUrl as image,
+            u.ImageUrl as user_image,
+            u.Username as username
+        FROM 
+            `vivianaramos6techx25.ISE.Posts` p  
+        JOIN
+            `vivianaramos6techx25.ISE.Users` u  
+        ON
+            p.AuthorId = u.UserId
+        WHERE 
+            p.AuthorId = '{user_id}'
+        ORDER BY
+            p.Timestamp DESC
+    """
+    
+    # Execute the query with timeout
+    query_job = client.query(query)
+    results = query_job.result(timeout=30)  # 30 second timeout
+    
+    # Convert results to list of dictionaries
+    posts = []
+    for row in results:
+        post = {
+            'user_id': row.user_id,
+            'post_id': row.post_id,
+            'timestamp': str(row.timestamp),
+            'content': row.content if row.content else "",
+            'image': row.image if row.image else None,
+            'username': row.username,
+            'user_image': row.user_image
+        }
+        posts.append(post)
+    
+    return posts
 
 def get_genai_advice(user_id):
     """Returns the most recent advice from the genai model.
