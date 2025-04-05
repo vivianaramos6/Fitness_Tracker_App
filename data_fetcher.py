@@ -8,6 +8,8 @@
 # testing earlier units.
 #############################################################################
 
+from google.cloud import bigquery
+import os
 import random
 
 # users = {
@@ -43,56 +45,110 @@ import random
 
 
 def get_user_sensor_data(user_id, workout_id):
-    """Returns a list of timestampped information for a given workout.
-
-    This function currently returns random data. You will re-write it in Unit 3.
     """
-    sensor_data = []
-    sensor_types = [
-        'accelerometer',
-        'gyroscope',
-        'pressure',
-        'temperature',
-        'heart_rate',
-    ]
-    for index in range(random.randint(5, 100)):
-        random_minute = str(random.randint(0, 59))
-        if len(random_minute) == 1:
-            random_minute = '0' + random_minute
-        timestamp = '2024-01-01 00:' + random_minute + ':00'
-        data = random.random() * 100
-        sensor_type = random.choice(sensor_types)
-        sensor_data.append(
-            {'sensor_type': sensor_type, 'timestamp': timestamp, 'data': data}
-        )
-    return sensor_data
+    Returns a list of sensor data from the workout.
+    
+    Each item in the list is a dictionary with:
+    - sensor_type: Name of the sensor (e.g., Heart Rate)
+    - timestamp: When the sensor recorded the value
+    - data: The value recorded
+    - units: The unit of measurement (e.g., bpm)
+    """
+    PROJECT_ID = "vivianaramos6techx25"
+    DATASET_ID = "ISE"
+    client = bigquery.Client(project=PROJECT_ID)
 
+    query = f"""
+        SELECT 
+            st.Name AS sensor_type,
+            sd.Timestamp AS timestamp,
+            sd.SensorValue AS data,
+            st.Units AS units
+        FROM `{PROJECT_ID}.{DATASET_ID}.SensorData` sd
+        JOIN `{PROJECT_ID}.{DATASET_ID}.SensorTypes` st
+          ON sd.SensorId = st.SensorId
+        JOIN `{PROJECT_ID}.{DATASET_ID}.Workouts` w
+          ON sd.WorkoutID = w.WorkoutId
+        WHERE w.UserId = @user_id AND sd.WorkoutID = @workout_id
+        ORDER BY timestamp
+    """
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("user_id", "STRING", user_id),
+            bigquery.ScalarQueryParameter("workout_id", "STRING", workout_id),
+        ]
+    )
+
+    query_job = client.query(query, job_config=job_config)
+    results = query_job.result()
+
+    sensor_data_list = []
+    for row in results:
+        sensor_data_list.append({
+            "sensor_type": row.sensor_type,
+            "timestamp": row.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "data": row.data,
+            "units": row.units
+        })
+
+    return sensor_data_list
 
 def get_user_workouts(user_id):
-    """Returns a list of user's workouts.
-
-    This function currently returns random data. You will re-write it in Unit 3.
     """
+    Fetches a list of workouts for a given user from the BigQuery database.
+    
+    Args:
+        user_id (str): The ID of the user.
+    
+    Returns:
+        List[dict]: A list of dictionaries representing workouts with keys:
+            workout_id, start_timestamp, end_timestamp, start_lat_lng, 
+            end_lat_lng, distance, steps, and calories_burned.
+    """
+    # Set your project and dataset
+    project_id = "vivianaramos6techx25"       # Replace with your actual project ID
+    dataset_id = "ISE"      # Replace with your actual dataset name
+
+    client = bigquery.Client(project=project_id)
+
+    query = f"""
+        SELECT 
+            WorkoutId AS workout_id,
+            FORMAT_DATETIME('%Y-%m-%d %H:%M:%S', StartTimestamp) AS start_timestamp,
+            FORMAT_DATETIME('%Y-%m-%d %H:%M:%S', EndTimestamp) AS end_timestamp,
+            [StartLocationLat, StartLocationLong] AS start_lat_lng,
+            [EndLocationLat, EndLocationLong] AS end_lat_lng,
+            TotalDistance AS distance,
+            TotalSteps AS steps,
+            CaloriesBurned AS calories_burned
+        FROM `{project_id}.{dataset_id}.Workouts`
+        WHERE UserId = @user_id
+        ORDER BY StartTimestamp DESC
+    """
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("user_id", "STRING", user_id)
+        ]
+    )
+
+    query_job = client.query(query, job_config=job_config)
+    results = query_job.result()
+
     workouts = []
-    for index in range(random.randint(1, 3)):
-        random_lat_lng_1 = (
-            1 + random.randint(0, 100) / 100,
-            4 + random.randint(0, 100) / 100,
-        )
-        random_lat_lng_2 = (
-            1 + random.randint(0, 100) / 100,
-            4 + random.randint(0, 100) / 100,
-        )
+    for row in results:
         workouts.append({
-            'workout_id': f'workout{index}',
-            'start_timestamp': '2024-01-01 00:00:00',
-            'end_timestamp': '2024-01-01 00:30:00',
-            'start_lat_lng': random_lat_lng_1,
-            'end_lat_lng': random_lat_lng_2,
-            'distance': random.randint(0, 200) / 10.0,
-            'steps': random.randint(0, 20000),
-            'calories_burned': random.randint(0, 100),
+            "workout_id": row.workout_id,
+            "start_timestamp": row.start_timestamp,
+            "end_timestamp": row.end_timestamp,
+            "start_lat_lng": row.start_lat_lng,
+            "end_lat_lng": row.end_lat_lng,
+            "distance": row.distance,
+            "steps": row.steps,
+            "calories_burned": row.calories_burned
         })
+
     return workouts
 
 
