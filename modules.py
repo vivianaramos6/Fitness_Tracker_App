@@ -194,21 +194,6 @@ def display_genai_advice(timestamp, content, image=None):
     if image:
         st.image(image)
 #user_id = st.session_state.get("user_id")  # or however your app stores it
-
-if user_id:
-    user_info = get_user_info(user_id)
-
-    if user_info:
-        display_genai_advice(
-            timestamp=user_info.get("timestamp", "Unknown"),
-            content=f"Welcome back, {user_info.get('name', 'User')}! Here's your personalized advice.",
-            image=user_info.get("image_url")  # Optional, only if your BigQuery table has this
-        )
-    else:
-        st.warning("User not found.")
-else:
-    st.info("Waiting for user ID...")
-
 # if __name__ == "__main__":
 #     # st.title("Test Display Activity Summary")
 #     user_id = "user1"
