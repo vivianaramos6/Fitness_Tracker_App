@@ -137,9 +137,9 @@ class TestDisplayActivitySummary(unittest.TestCase):
         self.assertEqual(at.markdown[0].value, "No workout data available.")
 
     def test_workout_data_display(self):
-        """
-        Test that the function correctly displays the workout summaries and past workouts table.
-        """
+
+        '''Test that the function correctly displays the workout summaries and past workouts table.'''
+        
         workouts_list = [
             {
                 'workout_id': 'workout1',
@@ -170,7 +170,7 @@ class TestDisplayActivitySummary(unittest.TestCase):
         self.assertIn("*Steps*<br>10000", at.markdown[3].value)
         self.assertIn("Workout 2 Summary", at.markdown[10].value)
         self.assertIn("*Steps*<br>15000", at.markdown[11].value)
-
+        
 class TestDisplayGenAiAdvice(unittest.TestCase):
     """Tests the display_genai_advice function."""
 

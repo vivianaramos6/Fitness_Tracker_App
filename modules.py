@@ -178,10 +178,36 @@ def display_recent_workouts(workouts_list):
 
 
 
-def display_genai_advice(timestamp, content, image):
-    """Write a good docstring here."""
-    pass
+def display_genai_advice(timestamp, content, image=None):
+    st.header("Gen Ai Advice")
+    st.subheader(f"Timestamp: {timestamp}")
+    #st.write(content)
+    #Making the content a mauve color background to match the website theme. Used gen ai to create this code for the color
+    #cant use write content because content variable is already used in the markdown
+    st.markdown(f"""
+        <div style='background-color: #E0B0FF; padding: 10px; border-radius: 15px; margin: 10px 0;'>
+            <p style='color: white;'>{content}</p>
+        </div>
+    """, unsafe_allow_html=True)
 
+    #uploads the image if there is one 
+    if image:
+        st.image(image)
+#user_id = st.session_state.get("user_id")  # or however your app stores it
+
+if user_id:
+    user_info = get_user_info(user_id)
+
+    if user_info:
+        display_genai_advice(
+            timestamp=user_info.get("timestamp", "Unknown"),
+            content=f"Welcome back, {user_info.get('name', 'User')}! Here's your personalized advice.",
+            image=user_info.get("image_url")  # Optional, only if your BigQuery table has this
+        )
+    else:
+        st.warning("User not found.")
+else:
+    st.info("Waiting for user ID...")
 
 # if __name__ == "__main__":
 #     # st.title("Test Display Activity Summary")
