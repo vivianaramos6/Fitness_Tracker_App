@@ -25,11 +25,9 @@ def display_app_page():
     with tabs[2]:
         display_recent_workouts_page()
     with tabs[3]:
-<<<<<<< HEAD
         display_community_page()
     with tabs[4]:
         display_genai_advice()
-=======
         st.title("Gen Ai Advice")
         #smaller left hand side and the larger right hand side. If the left hand side is less than 2, it would squish the words
         col1, col2 = st.columns([2, 4])  
@@ -62,7 +60,6 @@ def display_app_page():
                     #image = 'https://plus.unsplash.com/premium_photo-1669048780129-051d670fa2d1?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
                     with advice_container: 
                         display_genai_advice(timestamp,content, 'https://plus.unsplash.com/premium_photo-1669048780129-051d670fa2d1?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
->>>>>>> b4796db423275e7fca41c8b332b1ba1c3947f48a
                 
 
 
