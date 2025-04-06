@@ -6,8 +6,8 @@
 # You will write these tests in Unit 3.
 #############################################################################
 import unittest
-from unittest.mock import patch, MagicMock, PropertyMock
 import streamlit as st
+from unittest.mock import patch, MagicMock, PropertyMock
 import sys
 
 # sys.modules['google'] = MagicMock()
@@ -22,11 +22,8 @@ from data_fetcher import get_user_profile, get_user_posts, get_user_sensor_data,
 class TestGetUserProfile(unittest.TestCase):
 
     def test_get_user_profile_success(self):
-        # Patch all Google imports at the test level
-        with patch('data_fetcher.bigquery.Client') as mock_client, \
-            patch('google.api_core.exceptions.NotFound', create=True):
-            
-            # Rest of your test remains exactly the same
+        with patch('data_fetcher.bigquery.Client') as mock_client:
+            # Mock profile query
             mock_profile_job = MagicMock()
             mock_profile_row = MagicMock()
             mock_profile_row.full_name = 'Alice Johnson'
@@ -35,11 +32,15 @@ class TestGetUserProfile(unittest.TestCase):
             mock_profile_row.profile_image = 'http://example.com/alice.jpg'
             mock_profile_job.result.return_value = [mock_profile_row]
 
+            # Mock friends query
             mock_friends_job = MagicMock()
-            mock_friend1 = MagicMock(friend_id='user2')
-            mock_friend2 = MagicMock(friend_id='user3')
+            mock_friend1 = MagicMock()
+            mock_friend1.friend_id = 'user2'
+            mock_friend2 = MagicMock()
+            mock_friend2.friend_id = 'user3'
             mock_friends_job.result.return_value = [mock_friend1, mock_friend2]
 
+            # Configure side effect for different queries
             mock_client.return_value.query.side_effect = [
                 mock_profile_job,
                 mock_friends_job
@@ -47,11 +48,14 @@ class TestGetUserProfile(unittest.TestCase):
 
             result = get_user_profile('user1')
 
+            # Verify results
             self.assertEqual(result['full_name'], 'Alice Johnson')
             self.assertEqual(result['username'], 'alicej')
             self.assertEqual(result['date_of_birth'], '1990-01-15')
             self.assertEqual(result['profile_image'], 'http://example.com/alice.jpg')
             self.assertCountEqual(result['friends'], ['user2', 'user3'])
+
+            # Verify query calls
             self.assertEqual(mock_client.return_value.query.call_count, 2)
     
     @patch('data_fetcher.bigquery.Client')
