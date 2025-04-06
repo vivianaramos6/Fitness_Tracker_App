@@ -172,7 +172,6 @@ def get_user_profile(user_id):
     """
 
     from google.cloud import bigquery
-    from google.api_core.exceptions import GoogleAPIError
 
     # Initialize BigQuery client with explicit project ID
     client = bigquery.Client(project="vivianaramos6techx25")  
@@ -237,8 +236,7 @@ def get_user_posts(user_id):
               user_id, post_id, timestamp, content, and image
     """
     from google.cloud import bigquery
-    from google.api_core.exceptions import GoogleAPICallError, NotFound, BadRequest
-    import logging
+
 
     # Initialize BigQuery client with explicit project
     client = bigquery.Client(project="vivianaramos6techx25")
