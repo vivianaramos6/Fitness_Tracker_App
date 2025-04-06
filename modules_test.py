@@ -9,7 +9,6 @@
 import unittest
 import streamlit as st
 import pytest
-import streamlit as st
 from io import StringIO
 from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
@@ -35,13 +34,12 @@ class TestDisplayPost(unittest.TestCase):
 
         # Expected HTML structure
         expected_html = """
-        <div style="margin-bottom: 20px;">
+        <div style="margin-bottom: 30px;">
             <img src="https://example.com/profile.jpg" width="50" style="border-radius: 50%;" />
             <strong>test_user</strong>
             <div style="font-size: 0.9em; color: gray;">2024-01-01 12:00:00</div>
             <p>This is a test post with an image.</p>
             <img src="https://example.com/post_image.jpg" style="max-width: 100%;" />
-            <hr />
         </div>
         """
 
@@ -68,12 +66,11 @@ class TestDisplayPost(unittest.TestCase):
 
         # Expected HTML structure
         expected_html = """
-        <div style="margin-bottom: 20px;">
+        <div style="margin-bottom: 30px;">
             <img src="https://example.com/profile.jpg" width="50" style="border-radius: 50%;" />
             <strong>test_user</strong>
             <div style="font-size: 0.9em; color: gray;">2024-01-01 12:00:00</div>
             <p>This is a test post without an image.</p>
-            <hr />
         </div>
         """
 
@@ -100,12 +97,11 @@ class TestDisplayPost(unittest.TestCase):
 
         # Expected HTML structure
         expected_html = """
-        <div style="margin-bottom: 20px;">
+        <div style="margin-bottom: 30px;">
             <img src="https://example.com/profile.jpg" width="50" style="border-radius: 50%;" />
             <strong>test_user</strong>
             <div style="font-size: 0.9em; color: gray;">2024-01-01 12:00:00</div>
             <p></p>
-            <hr />
         </div>
         """
 
