@@ -263,7 +263,7 @@ def get_user_posts(user_id):
     
     # Execute the query with timeout
     query_job = client.query(query)
-    results = query_job.result(timeout=30)  # 30 second timeout
+    results = query_job.result() 
     
     # Convert results to list of dictionaries
     posts = []
@@ -281,6 +281,7 @@ def get_user_posts(user_id):
     
     return posts
 
+'''
 def get_genai_advice(user_id):
     """Returns the most recent advice from the genai model.
 
@@ -302,4 +303,62 @@ def get_genai_advice(user_id):
         'content': advice,
         'image': image,
     }
+'''
+def get_genai_advice(user_id):
+    """Fetches the advice and image for the given user."""
     
+    # Set your project and dataset
+    project_id = "vivianaramos6techx25"       # Replace with your actual project ID
+    dataset_id = "ISE"      # Replace with your actual dataset name
+
+    client = bigquery.Client(project=project_id)
+
+    # Query to fetch user data
+    query = f"""
+        SELECT 
+            UserId AS user_id,
+            Name AS name,
+            Username AS username,
+            ImageUrl AS image_url
+        FROM `{project_id}.{dataset_id}.Users`
+        WHERE UserId = @user_id
+    """
+
+    job_config = bigquery.QueryJobConfig(
+        query_parameters=[
+            bigquery.ScalarQueryParameter("user_id", "STRING", user_id)
+        ]
+    )
+
+    query_job = client.query(query, job_config=job_config)
+    results = query_job.result()
+
+    # Check if any result was returned
+    user_data = []
+    for row in results:
+        user_data.append({
+            'user_id': row.user_id,
+            'name': row.name,
+            'username': row.username,
+            'image_url': row.image_url,
+        })
+
+    # For simplicity, using random advice and image as placeholders
+    advice = random.choice([
+        'Your heart rate indicates you can push yourself further. You got this!',
+        "You're doing great! Keep up the good work.",
+        'You worked hard yesterday, take it easy today.',
+        'You have burned 100 calories so far today!',
+    ])
+    image = random.choice([
+        'https://plus.unsplash.com/premium_photo-1669048780129-051d670fa2d1?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        None,
+    ])
+
+    return {
+        'advice_id': 'advice1',
+        'timestamp': '2024-01-01 00:00:00',
+        'content': advice,
+        'image': image,
+        'user_data': user_data,
+    }
