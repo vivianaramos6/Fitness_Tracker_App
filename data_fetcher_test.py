@@ -11,7 +11,7 @@ import streamlit as st
 import sys
 
 # sys.modules['google'] = MagicMock()
-# sys.modules['google.cloud'] = MagicMock()
+sys.modules['google.cloud'] = MagicMock()
 sys.modules['google.cloud.bigquery'] = MagicMock()
 sys.modules['google.cloud.aiplatform'] = MagicMock()
 sys.modules['vertexai'] = MagicMock()
