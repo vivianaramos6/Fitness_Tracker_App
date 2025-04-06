@@ -10,12 +10,12 @@ import streamlit as st
 from unittest.mock import patch, MagicMock, PropertyMock
 import sys
 
-# sys.modules['google'] = MagicMock()
-sys.modules['google.cloud'] = MagicMock()
-sys.modules['google.cloud.bigquery'] = MagicMock()
-sys.modules['google.cloud.aiplatform'] = MagicMock()
-sys.modules['vertexai'] = MagicMock()
-sys.modules['vertexai.generative_models'] = MagicMock()
+# # sys.modules['google'] = MagicMock()
+# sys.modules['google.cloud'] = MagicMock()
+# sys.modules['google.cloud.bigquery'] = MagicMock()
+# sys.modules['google.cloud.aiplatform'] = MagicMock()
+# sys.modules['vertexai'] = MagicMock()
+# sys.modules['vertexai.generative_models'] = MagicMock()
 
 from data_fetcher import get_user_profile, get_user_posts, get_user_sensor_data, get_user_workouts
 
