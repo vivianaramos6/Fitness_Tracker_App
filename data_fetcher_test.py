@@ -17,7 +17,7 @@ import sys
 # sys.modules['vertexai'] = MagicMock()
 # sys.modules['vertexai.generative_models'] = MagicMock()
 
-from data_fetcher import get_user_profile, get_user_posts, get_user_sensor_data, get_user_workouts
+from data_fetcher import get_user_profile, get_user_posts, get_user_sensor_data, get_user_workouts, get_genai_advice
 
 class TestGetUserProfile(unittest.TestCase):
 
@@ -217,7 +217,36 @@ class TestGetUserWorkouts(unittest.TestCase):
             self.assertEqual(result[0]['steps'], 6000)
             self.assertEqual(result[0]['calories_burned'], 300)
 
-
+#tests if the gen ai advice is personalized and says the corresponding name to the user id in the response
+class TestGetGenAIAdvice(unittest.TestCase):
+    @patch('data_fetcher.bigquery.Client')
+    def test_get_genai_advice(self, mock_bigquery):
+        # Setup different test cases
+        test_cases = [
+            ("user123", "Alice"),
+            ("user456", "Bob"), 
+            ("user789", None)  # Test missing user
+        ]
+        
+        for user_id, expected_name in test_cases:
+            mock_row = MagicMock()
+            mock_row.__getitem__.return_value = expected_name
+            mock_query_job = MagicMock()
+            mock_query_job.result.return_value = [mock_row] if expected_name else []
+            mock_bigquery.return_value.query.return_value = mock_query_job
+            
+            result = get_genai_advice(user_id, "Give me fitness advice")
+            #checks if the messageis personalized with the name in the vertex ai message
+            if expected_name:
+                self.assertTrue(
+                    result['content'].startswith(f"{expected_name},"),
+                    f"Failed for {user_id}: Response should start with '{expected_name}'"
+                )
+            else:
+                self.assertTrue(
+                    result['content'].startswith("User,"),
+                    "Failed for missing user: Should default to 'User'"
+                )
 
 if __name__ == "__main__":
     unittest.main()
