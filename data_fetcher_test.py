@@ -220,33 +220,49 @@ class TestGetUserWorkouts(unittest.TestCase):
 #tests if the gen ai advice is personalized and says the corresponding name to the user id in the response
 class TestGetGenAIAdvice(unittest.TestCase):
     @patch('data_fetcher.bigquery.Client')
-    def test_get_genai_advice(self, mock_bigquery):
-        # Setup different test cases
+    @patch('data_fetcher.vertexai.init')
+    @patch('data_fetcher.GenerativeModel')
+    def test_get_genai_advice(self, mock_gen_model, mock_vertex_init, mock_bigquery):
+        # Setup test cases
         test_cases = [
             ("user123", "Alice"),
-            ("user456", "Bob"), 
+            ("user456", "Bob"),
             ("user789", None)  # Test missing user
         ]
-        
+
+        # Setup mock Vertex AI response
+        mock_response = MagicMock()
+        mock_response.text = "some generated fitness advice"
+        mock_gen_model.return_value.generate_content.return_value = mock_response
+
         for user_id, expected_name in test_cases:
+            # Setup BigQuery mock
             mock_row = MagicMock()
             mock_row.__getitem__.return_value = expected_name
             mock_query_job = MagicMock()
             mock_query_job.result.return_value = [mock_row] if expected_name else []
             mock_bigquery.return_value.query.return_value = mock_query_job
-            
+
+            # Call the function
             result = get_genai_advice(user_id, "Give me fitness advice")
-            #checks if the message is personalized with the name in the vertex ai message
+
+            # Verify the response format
             if expected_name:
-                self.assertTrue(
-                    f"{expected_name}," in result['content'],  # Changed from startswith() to in
-                    f"Failed for {user_id}: Response should contain '{expected_name},'"
+                expected_content = f"{expected_name}, some generated fitness advice"
+                self.assertEqual(
+                    result['content'],
+                    expected_content,
+                    f"Failed for {user_id}: Response should be '{expected_content}'"
                 )
             else:
-                self.assertTrue(
-                    "User," in result['content'],  # Changed from startswith() to in
-                    "Failed for missing user: Should contain 'User,'"
+                self.assertEqual(
+                    result['content'],
+                    "User, some generated fitness advice",
+                    "Failed for missing user: Should use 'User' as default"
                 )
+
+            # Verify the advice_id format
+            self.assertTrue(result['advice_id'].startswith(f"adv_{user_id}"))
 
 if __name__ == "__main__":
     unittest.main()
