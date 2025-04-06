@@ -7,59 +7,72 @@
 #############################################################################
 import unittest
 from unittest.mock import patch, MagicMock, PropertyMock
-from google.cloud.bigquery import QueryJob, Row, Client
+#from google.cloud.bigquery import QueryJob, Row, Client
 from data_fetcher import get_user_profile, get_user_posts, get_user_sensor_data, get_user_workouts
 
 class TestGetUserProfile(unittest.TestCase):
 
-    @patch('google.cloud.bigquery.Client')
+    @patch('data_fetcher.bigquery.Client')
     def test_get_user_profile_success(self, mock_client):
         """Test successful retrieval of user profile with friends"""
-        # Setup mock client and query results
-        mock_client.return_value = MagicMock()
+        # Mock the BigQuery client and query results
+        mock_client_instance = MagicMock()
+        mock_client.return_value = mock_client_instance
+
+        # Mock profile query results
+        mock_profile_row = MagicMock()
+        mock_profile_row.full_name = 'Alice Johnson'
+        mock_profile_row.username = 'alicej'
+        mock_profile_row.date_of_birth = '1990-01-15'
+        mock_profile_row.profile_image = 'http://example.com/alice.jpg'
         
-        mock_profile_job = MagicMock(spec=QueryJob)
-        mock_profile_job.result.return_value = [
-            MagicMock(
-                full_name='Alice Johnson',
-                username='alicej',
-                date_of_birth='1990-01-15',
-                profile_image='http://example.com/alice.jpg'
-            )
-        ]
+        # Mock friends query results
+        mock_friend1 = MagicMock()
+        mock_friend1.friend_id = 'user2'
+        mock_friend2 = MagicMock()
+        mock_friend2.friend_id = 'user3'
+
+        # Set up mock query results
+        mock_profile_job = MagicMock()
+        mock_profile_job.result.return_value = [mock_profile_row]
         
-        mock_friends_job = MagicMock(spec=QueryJob)
-        mock_friends_job.result.return_value = [
-            MagicMock(friend_id='user2'),
-            MagicMock(friend_id='user3')
-        ]
-        
-        # Configure mock client to return different jobs for different queries
-        mock_client.return_value.query.side_effect = [
+        mock_friends_job = MagicMock()
+        mock_friends_job.result.return_value = [mock_friend1, mock_friend2]
+
+        # Configure side effect to return different jobs for different queries
+        mock_client_instance.query.side_effect = [
             mock_profile_job,
             mock_friends_job
         ]
-        
-        # Execute
+
+        # Execute the function
         result = get_user_profile('user1')
+
+        # Verify the client was instantiated
+        mock_client.assert_called_once()
+
+        # Verify the queries were executed
+        self.assertEqual(mock_client_instance.query.call_count, 2)
         
-        # Assertions
+        # Verify the results
         self.assertEqual(result['full_name'], 'Alice Johnson')
         self.assertEqual(result['username'], 'alicej')
         self.assertEqual(result['date_of_birth'], '1990-01-15')
         self.assertEqual(result['profile_image'], 'http://example.com/alice.jpg')
         self.assertCountEqual(result['friends'], ['user2', 'user3'])
     
-    @patch('google.cloud.bigquery.Client')
+    @patch('data_fetcher.bigquery.Client')
     def test_get_user_profile_not_found(self, mock_client):
         """Test when user doesn't exist in database"""
+        # Setup mock client instance with project property
+        mock_client_instance = MagicMock()
+        type(mock_client_instance).project = PropertyMock(return_value='vivianaramos6techx25')
+        
         # Setup mock empty result
-        mock_profile_job = MagicMock(spec=QueryJob)
+        mock_profile_job = MagicMock()
         mock_profile_job.result.return_value = []
         
-        # Configure mock client with project attribute
-        mock_client_instance = MagicMock(spec=Client)
-        type(mock_client_instance).project = PropertyMock(return_value='vivianaramos6techx25')
+        # Configure mock client
         mock_client_instance.query.return_value = mock_profile_job
         mock_client.return_value = mock_client_instance
         
@@ -68,44 +81,58 @@ class TestGetUserProfile(unittest.TestCase):
         
         # Assertions
         self.assertIsNone(result)
-        self.assertEqual(mock_client_instance.query.call_count, 1)
+        mock_client_instance.query.assert_called_once()
 
 class TestGetUserPosts(unittest.TestCase):
-    @patch('google.cloud.bigquery.Client')
+    @patch('data_fetcher.bigquery.Client')
     def test_get_user_posts_success(self, mock_client):
         """Test successful retrieval of user posts"""
-        # Setup mock post rows
-        mock_post_row1 = MagicMock()
-        mock_post_row1.post_id = 'post1'
-        mock_post_row1.user_id = 'user1'
-        mock_post_row1.timestamp = '2023-01-01 12:00:00'
-        mock_post_row1.content = 'First post'
-        mock_post_row1.image = 'http://example.com/image1.jpg'
-        mock_post_row1.username = 'alice'
-        mock_post_row1.user_image = 'http://example.com/profile1.jpg'
-
-        mock_post_row2 = MagicMock()
-        mock_post_row2.post_id = 'post2'
-        mock_post_row2.user_id = 'user1'
-        mock_post_row2.timestamp = '2023-01-02 12:00:00'
-        mock_post_row2.content = 'Second post'
-        mock_post_row2.image = None
-        mock_post_row2.username = 'alice'
-        mock_post_row2.user_image = 'http://example.com/profile1.jpg'
-
-        # Setup mock query job
-        mock_query_job = MagicMock(spec=QueryJob)
-        mock_query_job.result.return_value = [mock_post_row1, mock_post_row2]
-
-        # Configure mock client
-        mock_client_instance = MagicMock(spec=Client)
+        # Setup mock client instance with project property
+        mock_client_instance = MagicMock()
         type(mock_client_instance).project = PropertyMock(return_value='vivianaramos6techx25')
+        
+        # Setup mock post data
+        mock_post1 = {
+            'post_id': 'post1',
+            'user_id': 'user1',
+            'timestamp': '2023-01-01 12:00:00',
+            'content': 'First post',
+            'image': 'http://example.com/image1.jpg',
+            'username': 'alice',
+            'user_image': 'http://example.com/profile1.jpg'
+        }
+        
+        mock_post2 = {
+            'post_id': 'post2',
+            'user_id': 'user1',
+            'timestamp': '2023-01-02 12:00:00',
+            'content': 'Second post',
+            'image': None,
+            'username': 'alice',
+            'user_image': 'http://example.com/profile1.jpg'
+        }
+        
+        # Create mock row objects
+        def create_mock_row(data):
+            mock_row = MagicMock()
+            for key, value in data.items():
+                setattr(mock_row, key, value)
+            return mock_row
+        
+        # Setup mock query job
+        mock_query_job = MagicMock()
+        mock_query_job.result.return_value = [
+            create_mock_row(mock_post1),
+            create_mock_row(mock_post2)
+        ]
+        
+        # Configure mock client
         mock_client_instance.query.return_value = mock_query_job
         mock_client.return_value = mock_client_instance
-
+        
         # Execute
         result = get_user_posts('user1')
-
+        
         # Assertions
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0]['post_id'], 'post1')
@@ -114,27 +141,29 @@ class TestGetUserPosts(unittest.TestCase):
         self.assertEqual(result[1]['post_id'], 'post2')
         self.assertEqual(result[1]['content'], 'Second post')
         self.assertIsNone(result[1]['image'])
-        self.assertEqual(mock_client_instance.query.call_count, 1)
+        mock_client_instance.query.assert_called_once()
 
-    @patch('google.cloud.bigquery.Client')
+    @patch('data_fetcher.bigquery.Client')
     def test_get_user_posts_empty(self, mock_client):
         """Test when user has no posts"""
-        # Setup mock empty result
-        mock_query_job = MagicMock(spec=QueryJob)
-        mock_query_job.result.return_value = []
-
-        # Configure mock client
-        mock_client_instance = MagicMock(spec=Client)
+        # Setup mock client instance with project property
+        mock_client_instance = MagicMock()
         type(mock_client_instance).project = PropertyMock(return_value='vivianaramos6techx25')
+        
+        # Setup mock empty result
+        mock_query_job = MagicMock()
+        mock_query_job.result.return_value = []
+        
+        # Configure mock client
         mock_client_instance.query.return_value = mock_query_job
         mock_client.return_value = mock_client_instance
-
+        
         # Execute
         result = get_user_posts('user_with_no_posts')
-
+        
         # Assertions
         self.assertEqual(len(result), 0)
-        self.assertEqual(mock_client_instance.query.call_count, 1)
+        mock_client_instance.query.assert_called_once()
 
 
 class TestGetUserSensorData(unittest.TestCase):

@@ -11,7 +11,7 @@ from internals import create_component
 import streamlit as st
 from datetime import datetime, timedelta
 import pandas as pd
-from data_fetcher import get_user_posts, get_genai_advice, get_user_profile, get_user_sensor_data, get_user_workouts
+# from data_fetcher import get_user_posts, get_genai_advice, get_user_profile, get_user_sensor_data, get_user_workouts
 
 
 # This one has been written for you as an example. You may change it as wanted.

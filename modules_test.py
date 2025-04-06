@@ -14,7 +14,7 @@ from io import StringIO
 from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
 from modules import display_post, display_activity_summary, display_genai_advice, display_recent_workouts
-from data_fetcher import get_user_posts, get_genai_advice, get_user_profile, get_user_sensor_data, get_user_workouts
+# from data_fetcher import get_user_posts, get_genai_advice, get_user_profile, get_user_sensor_data, get_user_workouts
 
 # Write your tests below
 
