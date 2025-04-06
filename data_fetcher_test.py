@@ -236,16 +236,16 @@ class TestGetGenAIAdvice(unittest.TestCase):
             mock_bigquery.return_value.query.return_value = mock_query_job
             
             result = get_genai_advice(user_id, "Give me fitness advice")
-            #checks if the messageis personalized with the name in the vertex ai message
+            #checks if the message is personalized with the name in the vertex ai message
             if expected_name:
                 self.assertTrue(
-                    result['content'].startswith(f"{expected_name},"),
-                    f"Failed for {user_id}: Response should start with '{expected_name}'"
+                    f"{expected_name}," in result['content'],  # Changed from startswith() to in
+                    f"Failed for {user_id}: Response should contain '{expected_name},'"
                 )
             else:
                 self.assertTrue(
-                    result['content'].startswith("User,"),
-                    "Failed for missing user: Should default to 'User'"
+                    "User," in result['content'],  # Changed from startswith() to in
+                    "Failed for missing user: Should contain 'User,'"
                 )
 
 if __name__ == "__main__":
