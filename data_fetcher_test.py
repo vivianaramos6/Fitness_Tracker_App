@@ -7,8 +7,11 @@
 #############################################################################
 import unittest
 from unittest.mock import patch, MagicMock, PropertyMock
+import streamlit as st
 import sys
 
+# sys.modules['google'] = MagicMock()
+# sys.modules['google.cloud'] = MagicMock()
 sys.modules['google.cloud.bigquery'] = MagicMock()
 sys.modules['google.cloud.aiplatform'] = MagicMock()
 sys.modules['vertexai'] = MagicMock()
