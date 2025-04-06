@@ -9,8 +9,12 @@
 #############################################################################
 
 from google.cloud import bigquery
+from vertexai.generative_models import GenerativeModel, GenerationConfig
+from google.cloud import aiplatform
+import vertexai
 import os
 import random
+import datetime
 
 # users = {
 #     'user1': {
@@ -281,84 +285,61 @@ def get_user_posts(user_id):
     
     return posts
 
-'''
-def get_genai_advice(user_id):
-    """Returns the most recent advice from the genai model.
 
-    This function currently returns random data. You will re-write it in Unit 3.
-    """
-    advice = random.choice([
-        'Your heart rate indicates you can push yourself further. You got this!',
-        "You're doing great! Keep up the good work.",
-        'You worked hard yesterday, take it easy today.',
-        'You have burned 100 calories so far today!',
-    ])
-    image = random.choice([
-        'https://plus.unsplash.com/premium_photo-1669048780129-051d670fa2d1?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-        None,
-    ])
-    return {
-        'advice_id': 'advice1',
-        'timestamp': '2024-01-01 00:00:00',
-        'content': advice,
-        'image': image,
-    }
-'''
-def get_genai_advice(user_id):
-    """Fetches the advice and image for the given user."""
-    
-    # Set your project and dataset
-    project_id = "vivianaramos6techx25"       # Replace with your actual project ID
-    dataset_id = "ISE"      # Replace with your actual dataset name
+def get_genai_advice(user_id, user_input="Give me fitness advice"):
+    """Get personalized fitness advice from Vertex AI Gemini."""
+    try:
+        #Used AI to help debug to get the users info from the query as well as help generate query code
+        project_id = "vivianaramos6techx25"
+        dataset_id = "ISE"
+        client = bigquery.Client(project=project_id)
+                
+        query = """
+            SELECT Name AS name
+            FROM `vivianaramos6techx25.ISE.Users`
+            WHERE LOWER(UserId) = LOWER(@user_id)
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ScalarQueryParameter("user_id", "STRING", user_id)]
+        )
+        query_job = client.query(query, job_config=job_config)
+        result = list(query_job.result())
+        #print(f"Running query: {query}")
+        #print(f"BigQuery result: {result}")
+        #Needs to access like 2 d array to get the users information from the query table!!
+        user_name = result[0][0] if result else "User"
 
-    client = bigquery.Client(project=project_id)
+        workouts = get_user_workouts(user_id)
+        include_image = len(workouts) < 2
+        
+        vertexai.init(project=project_id, location="us-central1")
+        model = GenerativeModel("gemini-1.5-flash-002")
+        
+        #response and instructions for the fitness bot. prompt is extensive because without a detailed prompt
+        #the bot would give the same fitness advice each time its asked
+        prompt = f"""You're a fitness coach. {user_name} asks: "{user_input}"
+        Respond with fitness advice based off what the user is asking you.
+        For example, if the user asks for a fitness quote to keep them motivated provide them a fitness quote.
+        Also make the advice or quote short, 1-2 sentences.
+        If the user does not specify exactly what they want give generic fitness advice."""
+        
+        response = model.generate_content(prompt)
+        content = response.text if hasattr(response, 'text') else "Stay active!"
 
-    # Query to fetch user data
-    query = f"""
-        SELECT 
-            UserId AS user_id,
-            Name AS name,
-            Username AS username,
-            ImageUrl AS image_url
-        FROM `{project_id}.{dataset_id}.Users`
-        WHERE UserId = @user_id
-    """
-
-    job_config = bigquery.QueryJobConfig(
-        query_parameters=[
-            bigquery.ScalarQueryParameter("user_id", "STRING", user_id)
-        ]
-    )
-
-    query_job = client.query(query, job_config=job_config)
-    results = query_job.result()
-
-    # Check if any result was returned
-    user_data = []
-    for row in results:
-        user_data.append({
-            'user_id': row.user_id,
-            'name': row.name,
-            'username': row.username,
-            'image_url': row.image_url,
-        })
-
-    # For simplicity, using random advice and image as placeholders
-    advice = random.choice([
-        'Your heart rate indicates you can push yourself further. You got this!',
-        "You're doing great! Keep up the good work.",
-        'You worked hard yesterday, take it easy today.',
-        'You have burned 100 calories so far today!',
-    ])
-    image = random.choice([
-        'https://plus.unsplash.com/premium_photo-1669048780129-051d670fa2d1?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-        None,
-    ])
-
-    return {
-        'advice_id': 'advice1',
-        'timestamp': '2024-01-01 00:00:00',
-        'content': advice,
-        'image': image,
-        'user_data': user_data,
-    }
+        timestamp_str = datetime.datetime.now().strftime('%Y%m%d%H%M')
+        simple_advice_id = f"adv_{user_id}_{timestamp_str}"
+        image_url = 'https://plus.unsplash.com/premium_photo-1669048780129-051d670fa2d1?q=80&w=3870&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'         
+        return {
+            'advice_id': simple_advice_id,    
+            'content': f"{user_name}, {content}",
+            'image_url': image_url if include_image else None, 
+            'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }
+        
+    except Exception as e:
+        return {
+            'advice_id': f"adv_{user_id}_error",  # Include user ID even in error case
+            'content': "Sorry, I couldn't generate advice right now.",
+            'image_url': None,
+            'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }

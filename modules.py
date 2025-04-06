@@ -46,13 +46,12 @@ def display_post(username, user_image, timestamp, content, post_image):
     import streamlit as st
     # Render the post as HTML using st.markdown
     html = f"""
-    <div style="margin-bottom: 20px;">
+    <div style="margin-bottom: 30px;">
         <img src="{user_image}" width="50" style="border-radius: 50%;" />
         <strong>{username}</strong>
         <div style="font-size: 0.9em; color: gray;">{timestamp}</div>
         <p>{content}</p>
         {f'<img src="{post_image}" style="max-width: 100%;" />' if post_image else ''}
-        <hr />
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
@@ -180,7 +179,7 @@ def display_recent_workouts(workouts_list):
 
 def display_genai_advice(timestamp, content, image=None):
     st.header("Gen Ai Advice")
-    st.subheader(f"Timestamp: {timestamp}")
+    st.markdown(f"**{timestamp}**")
     #st.write(content)
     #Making the content a mauve color background to match the website theme. Used gen ai to create this code for the color
     #cant use write content because content variable is already used in the markdown
