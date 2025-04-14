@@ -1,0 +1,182 @@
+﻿Usability Test Instructions for Paper Prototypes
+General Instructions:
+Imagine this is a fitness app you're using to stay healthy and connected.
+For each task, point to or tap the part of the paper screen you would interact with.
+You will be shown a new screen when something changes as a result of your action.
+
+
+For the usability testing of both features there were two participants picked. Both software engineering students from University of Puerto Rico. The testing and questionnaire was performed by Viviana Ramos. 
+PART 1: Goals Page Tasks
+Scenario:
+You’ve just joined a fitness app and want to set some personal and group goals, track your progress, and see your achievements.
+Tasks:
+Add a General Goal
+* Locate and select the goal “Run 10 miles this week.”
+* Add it to your weekly goals list.
+Mark a Goal as Completed
+* Imagine you’ve completed the goal.
+* Mark it as completed.
+View Achievements
+* Scroll to or find the area where your achievement badges are displayed.
+* Note which ones are unlocked vs locked.
+
+
+
+
+
+
+
+
+
+
+
+
+Post-Test Questions 
+After completing all tasks, ask:
+* What was confusing or unclear?
+[User 1]: “When adding goals, can I only add goals from the suggested section?”
+[User 2]: “Is there a goal limit?”
+
+
+* What would you expect to happen that didn’t?
+
+
+[User 1]: “I thought achievements would have its own section but could not find it. It's in the goals section”
+
+
+[User 2]: “I thought there would be a section dedicated to goal creation” 
+
+
+
+
+* How easy or hard was it to complete each task?
+
+
+[User 1]: “Each task was fairly easy to complete, some were a bit annoying but still easy.”
+
+
+[User 2}: “Completing tasks was pretty easy”
+
+
+* What features would you add?
+
+
+[User 1]: “I would add a custom goal button, and would change the achievements to their own section”
+[User 2]: “I think the features are fine, but I would change the color palette”
+
+
+**Both users successfully completed their tasks**
+
+
+
+
+
+
+
+
+
+
+PART 2: Fitness Groups Page Tasks
+Scenario:
+You’re interested in joining a community to help stay motivated with your workouts.
+Tasks:
+Join a Fitness Group
+* Choose the Cycling group and join it.
+Schedule a Joint Workout
+* Schedule a joint workout with the group for the 21st of April, at 7:30am your time
+Leave the Group
+* Now imagine you're no longer interested in Cycling.
+* Leave the group.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Post-Test Questions 
+After completing all tasks, ask:
+* What was confusing or unclear?
+[User 1]: “Leaving the fitness group was a bit confusing”
+[User 2]: “the navigation bar was confusion because there is no differentiation between what is a group and what is a different part of the page itself”
+
+
+* What would you expect to happen that didn’t?
+
+
+[User 1]: “I thought there would be a button to leave the fitness group but there wasn't”
+
+
+[User 2]: “ I expected an option to report or favorite a post upon clicking the action button on the post”
+
+
+
+
+* How easy or hard was it to complete each task?
+[User 1]: “Each task was fairly easy to complete”
+[User 2]: “tasks felt easy to complete”
+* What features would you add?
+
+
+[User 1]: “Just one section for community in general where all your joined groups appear
+
+
+[User 2]:  ⁠”I would add a feature to filter/sort user posts by different criteria”
+
+
+
+
+
+
+**Both users successfully completed their tasks**
