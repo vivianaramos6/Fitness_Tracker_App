@@ -1,4 +1,5 @@
 ﻿Usability Test Instructions for Paper Prototypes
+
 General Instructions:
 Imagine this is a fitness app you're using to stay healthy and connected.
 For each task, point to or tap the part of the paper screen you would interact with.
@@ -6,6 +7,7 @@ You will be shown a new screen when something changes as a result of your action
 
 
 For the usability testing of both features there were two participants picked. Both software engineering students from University of Puerto Rico. The testing and questionnaire was performed by Viviana Ramos. 
+
 PART 1: Goals Page Tasks
 Scenario:
 You’ve just joined a fitness app and want to set some personal and group goals, track your progress, and see your achievements.
@@ -25,13 +27,16 @@ View Achievements
 
 
 
+Notes
+*Users expected more flexibility in adding goals (e.g., custom goals).
+*User 2 expected a dedicated goal-creation section
+*Both users struggled to locate achievements
 
 
 
 
 
-
-Post-Test Questions 
+Post-Test Questions / Feedback
 After completing all tasks, ask:
 * What was confusing or unclear?
 [User 1]: “When adding goals, can I only add goals from the suggested section?”
@@ -69,6 +74,15 @@ After completing all tasks, ask:
 
 
 
+Results
+*Limited Goal-Setting Options
+  Hypothesis: Users expect more flexibility in setting personal goals beyond pre-defined suggestions.
+  Fix: Add a "Create Custom Goal" button alongside suggested goals for personalized tracking.
+
+*Hard-to-Find Achievements
+  Hypothesis: Users assume achievements should have a dedicated section rather than being nested within goals.
+  Fix: Move the Achievements section to a more visible section in the goals page.
+
 
 
 
@@ -89,63 +103,12 @@ Leave the Group
 * Leave the group.
 
 
+Notes
+*User 1 found it unclear how to leave the group, expecting a dedicated button.
+*User 2 struggled with differentiating between groups and other page sections 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Post-Test Questions 
+Post-Test Questions / Feedback
 After completing all tasks, ask:
 * What was confusing or unclear?
 [User 1]: “Leaving the fitness group was a bit confusing”
@@ -169,10 +132,10 @@ After completing all tasks, ask:
 * What features would you add?
 
 
-[User 1]: “Just one section for community in general where all your joined groups appear
+[User 1]: “Just one section for community in general where all your joined groups appear⁠”
 
 
-[User 2]:  ⁠”I would add a feature to filter/sort user posts by different criteria”
+[User 2]:  “I would add a feature to filter/sort user posts by different criteria”
 
 
 
@@ -180,3 +143,15 @@ After completing all tasks, ask:
 
 
 **Both users successfully completed their tasks**
+
+
+
+
+Results
+*Small "Leave Group" Button
+  Hypothesis: Users expect a very explicit way to exit a group.
+  Fix: Increase size of "Leave Group" button in the group settings.
+
+*Lack of Group Management Hub
+  Hypothesis: Users want a centralized place for group management.
+  Fix: Introduce a "My Groups" tab showing all memberships.
