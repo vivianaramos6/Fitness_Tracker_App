@@ -10,8 +10,11 @@
 
 from google.cloud import bigquery
 from vertexai.generative_models import GenerativeModel, GenerationConfig
+# from vertexai.language_models import ChatModel
 from google.cloud import aiplatform
+from datetime import date, timedelta
 import vertexai
+import uuid
 import os
 import random
 import datetime
@@ -343,34 +346,241 @@ def get_genai_advice(user_id, user_input="Give me fitness advice"):
         }
 
 
-def check_and_award_goal_achievements(user_id):
+
+def get_suggested_goals(user_id): 
+    
+    vertexai.init(project="vivianaramos6techx25", location="us-central1")
+    model = GenerativeModel("gemini-1.5-flash-002")
+    import pandas as pd
+    import streamlit as st
+
     client = bigquery.Client(project="vivianaramos6techx25")
 
-    # 1. Count how many completed goals the user has
+    # Prompt Gemini to generate 10 generic weekly fitness goals
+    prompt = (
+        "Generate 10 weekly fitness goals that are simple and measurable. "
+        "Format each as: Goal Title - Target Value.\n\n"
+        "Example:\n"
+        "Run 10 miles - 10\n"
+        "Drink 8 cups of water - 8\n"
+        "Now generate the full list:"
+    )
+
+    response = model.generate_content(prompt)
+    goals_text = response.text.strip()
+
+    # Parse into a dataframe format
+    generic_goals = []
+    for line in goals_text.splitlines():
+        if "-" in line:
+            parts = line.split("-", 1)
+            title = parts[0].strip("•*1234567890. ").strip()
+            value = parts[1].strip()
+            try:
+                numeric_value = float(''.join([c for c in value if c.isdigit() or c == '.']))
+            except:
+                numeric_value = 1.0  # fallback
+            generic_goals.append({"Title": title, "TargetValue": numeric_value})
+
+    return pd.DataFrame(generic_goals)
+
+
+def get_weekly_goals(user_id):
+    PROJECT_ID = "vivianaramos6techx25"
+    DATASET_ID = "ISE"
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT Title, TargetValue, CurrentValue
+        FROM ISE.PersonalGoals
+        WHERE UserId = '{user_id}' AND StartDate >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+    """
+    return client.query(query).to_dataframe()
+
+def mark_goal_as_completed(user_id, title):
+    from google.cloud import bigquery
+    client = bigquery.Client(project="vivianaramos6techx25")
+    
+    update_query = f"""
+        UPDATE ISE.PersonalGoals
+        SET IsCompleted = TRUE
+        WHERE UserId = '{user_id}' AND Title = '{title}'
+    """
+    client.query(update_query)
+
+
+def get_completed_goals(user_id):
+    PROJECT_ID = "vivianaramos6techx25"
+    DATASET_ID = "ISE"
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT Title, TargetValue, StartDate, EndDate
+        FROM ISE.PersonalGoals
+        WHERE UserId = '{user_id}' AND IsCompleted = TRUE
+    """
+    return client.query(query).to_dataframe()
+
+def get_user_achievements(user_id):
+    from google.cloud import bigquery
+    client = bigquery.Client(project="vivianaramos6techx25")
+
+    query = f"""
+        SELECT a.Name, a.Description, ua.EarnedDate
+        FROM ISE.UserAchievements ua
+        JOIN ISE.Achievements a ON ua.AchievementId = a.AchievementId
+        WHERE ua.UserId = '{user_id}'
+        ORDER BY ua.EarnedDate
+    """
+    df = client.query(query).to_dataframe()
+    
+    # Optional: Add emojis or formatted labels if you're using this in Streamlit
+    df["Name"] = df["Name"].apply(lambda n: f"🏆 {n}")
+    return df
+
+
+def get_group_goals(user_id):
+    from google.cloud import bigquery
+    import pandas as pd
+    from vertexai.generative_models import GenerativeModel, GenerationConfig
+    import vertexai
+
+    # Initialize Vertex AI if not already done in your project setup
+    vertexai.init(project="vivianaramos6techx25", location="us-central1")
+    model = GenerativeModel("gemini-1.5-flash-002")
+    
+    client = bigquery.Client(project="vivianaramos6techx25")
+
+    # Step 1: Get all groups where the user is a member
+    group_query = f"""
+        SELECT g.GroupId, g.Name, g.Category
+        FROM ISE.GroupMemberships m
+        JOIN ISE.FitnessGroups g ON m.GroupId = g.GroupId
+        WHERE m.UserId = '{user_id}'
+    """
+    groups = client.query(group_query).to_dataframe()
+
+    if groups.empty:
+        # Return an empty DataFrame if the user is not in any group
+        return pd.DataFrame(columns=["Description", "Contribution", "TargetValue", "RewardClaimed", "GroupId", "GroupName"])
+
+    group_goals = []
+    # Step 2: For each group, generate a specific weekly goal using Gemini
+    for _, row in groups.iterrows():
+        group_name = row["Name"]
+        category = row["Category"]
+        group_id = row["GroupId"]
+
+        # Construct a detailed prompt to get a measurable goal for the group
+        prompt = (
+            f"You are a fitness coach. Create a short, weekly fitness goal "
+            f"for someone in a {category} group called '{group_name}'. "
+            "The goal should be specific, measurable, and no more than 10 words. "
+            "Example: 'Run 3 miles, 3 times this week.' "
+            "Now, generate a goal for this group:"
+        )
+
+        
+        # Generate the goal from the model
+        response = model.generate_content(prompt)
+        description = response.text.strip()
+
+        # If no result is returned, use a fallback message
+        if not description:
+            description = f"Participate actively in {group_name} activities this week."
+
+        group_goals.append({
+            "Description": description,
+            "Contribution": 0,   # Default value; this could later be updated with actual progress data
+            "TargetValue": 1.0,  # Placeholder target value for display; update as needed
+            "RewardClaimed": False,
+            "GroupId": group_id,
+            "GroupName": group_name
+        })
+
+    return pd.DataFrame(group_goals)
+
+
+
+def check_and_award_goal_achievements(user_id):
+    from google.cloud import bigquery
+    from datetime import date
+
+    client = bigquery.Client(project="vivianaramos6techx25")
+
+    # Count completed personal goals
     count_query = f"""
         SELECT COUNT(*) as completed_count
         FROM ISE.PersonalGoals
         WHERE UserId = '{user_id}' AND IsCompleted = TRUE
     """
-    count = client.query(count_query).to_dataframe().iloc[0]["completed_count"]
+    completed_count = client.query(count_query).to_dataframe().iloc[0]["completed_count"]
 
-    # 2. Check which achievements the user already has
+    # Get existing achievements
     existing_query = f"""
         SELECT AchievementId FROM ISE.UserAchievements WHERE UserId = '{user_id}'
     """
-    existing = set(client.query(existing_query).to_dataframe()["AchievementId"])
+    existing_achievements = set(client.query(existing_query).to_dataframe()["AchievementId"])
 
-    # 3. Award based on thresholds
-    to_award = []
-    if count >= 5 and 'goal_ach1' not in existing:
-        to_award.append('goal_ach1')
-    if count >= 10 and 'goal_ach2' not in existing:
-        to_award.append('goal_ach2')
-    if count >= 20 and 'goal_ach3' not in existing:
-        to_award.append('goal_ach3')
+    # Define structured goal achievements
+    GOAL_ACHIEVEMENTS = [
+        {"id": "goal_ach1", "threshold": 5, "name": "Bronze Finisher", "description": "Completed 5 personal goals"},
+        {"id": "goal_ach2", "threshold": 10, "name": "Silver Achiever", "description": "Completed 10 personal goals"},
+        {"id": "goal_ach3", "threshold": 20, "name": "Gold Master", "description": "Completed 20 personal goals"},
+    ]
 
-    for ach in to_award:
-        client.query(f"""
-            INSERT INTO ISE.UserAchievements (UserId, AchievementId, EarnedDate)
-            VALUES ('{user_id}', '{ach}', CURRENT_DATE())
-        """)
+    # Loop through and award any new ones
+    for ach in GOAL_ACHIEVEMENTS:
+        if completed_count >= ach["threshold"] and ach["id"] not in existing_achievements:
+            insert_query = f"""
+                INSERT INTO ISE.UserAchievements (UserId, AchievementId, EarnedDate)
+                VALUES ('{user_id}', '{ach['id']}', CURRENT_DATE())
+            """
+            client.query(insert_query)
+
+
+def add_suggested_goal_to_weekly(user_id, title, target_value):
+    client = bigquery.Client()
+    goal_id = f"pg_{uuid.uuid4().hex[:6]}"
+    today = date.today()
+    end_date = today + timedelta(days=7)
+
+    query = f"""
+        INSERT INTO `vivianaramos6techx25.ISE.PersonalGoals`
+        (GoalId, UserId, Title, Description, TargetValue, CurrentValue, StartDate, EndDate, IsCompleted, IsCustom)
+        VALUES (
+            '{goal_id}',
+            '{user_id}',
+            '{title}',
+            NULL,
+            {target_value},
+            0,
+            '{today}',
+            '{end_date}',
+            FALSE,
+            FALSE
+        )
+    """
+    client.query(query).result()
+
+def add_group_goal_to_weekly(user_id, title, target_value):
+    client = bigquery.Client()
+    goal_id = f"pg_{uuid.uuid4().hex[:6]}"
+    today = date.today()
+    end_date = today + timedelta(days=7)
+
+    query = f"""
+        INSERT INTO `vivianaramos6techx25.ISE.PersonalGoals`
+        (GoalId, UserId, Title, Description, TargetValue, CurrentValue, StartDate, EndDate, IsCompleted, IsCustom)
+        VALUES (
+            '{goal_id}',
+            '{user_id}',
+            '{title}',
+            NULL,
+            {target_value},
+            0,
+            '{today}',
+            '{end_date}',
+            FALSE,
+            TRUE
+        )
+    """
+    client.query(query).result()
