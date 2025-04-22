@@ -3,6 +3,10 @@
 ## Our Team
 Viviana V. Ramos Vivoni, Adaora Michelle Igwe, Amanda Chinaza Eni, Melanie Jackson
 
+## GCP Deployment Link - Project 3
+
+https://a3teamrepo1-vtnph7dpva-uc.a.run.app/
+
 ## How to run the streamlit app
 
 ### Running the Streamlit app for development
