@@ -341,3 +341,36 @@ def get_genai_advice(user_id, user_input="Give me fitness advice"):
             'image_url': None,
             'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         }
+
+
+def check_and_award_goal_achievements(user_id):
+    client = bigquery.Client(project="vivianaramos6techx25")
+
+    # 1. Count how many completed goals the user has
+    count_query = f"""
+        SELECT COUNT(*) as completed_count
+        FROM ISE.PersonalGoals
+        WHERE UserId = '{user_id}' AND IsCompleted = TRUE
+    """
+    count = client.query(count_query).to_dataframe().iloc[0]["completed_count"]
+
+    # 2. Check which achievements the user already has
+    existing_query = f"""
+        SELECT AchievementId FROM ISE.UserAchievements WHERE UserId = '{user_id}'
+    """
+    existing = set(client.query(existing_query).to_dataframe()["AchievementId"])
+
+    # 3. Award based on thresholds
+    to_award = []
+    if count >= 5 and 'goal_ach1' not in existing:
+        to_award.append('goal_ach1')
+    if count >= 10 and 'goal_ach2' not in existing:
+        to_award.append('goal_ach2')
+    if count >= 20 and 'goal_ach3' not in existing:
+        to_award.append('goal_ach3')
+
+    for ach in to_award:
+        client.query(f"""
+            INSERT INTO ISE.UserAchievements (UserId, AchievementId, EarnedDate)
+            VALUES ('{user_id}', '{ach}', CURRENT_DATE())
+        """)
