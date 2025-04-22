@@ -264,7 +264,11 @@ def schedule_group_workout(group_id, user_id, workout_datetime, location=None, t
     try:
         event_id = f"event_{group_id}_{workout_datetime.strftime('%Y%m%d%H%M')}"
         
-        location_value = 'NULL' if not location else f"'{location.replace("'", "''")}'"
+        if not location:
+            location_value = 'NULL'
+        else:
+            escaped_location = location.replace("'", "''")
+            location_value = f"'{escaped_location}'"
         
         insert_query = f"""
             INSERT INTO `vivianaramos6techx25.ISE.GroupEvents`
