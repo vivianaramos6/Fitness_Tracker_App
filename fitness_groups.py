@@ -278,12 +278,6 @@ def schedule_group_workout(group_id, user_id, workout_datetime, location=None, t
                 '{user_id}'
             )
         """
-        #         # Show success message with user-friendly details
-        #         st.success(f"""
-        #             🎉 Workout scheduled successfully for {group_name}!
-        #             \n📅 {workout_datetime.strftime('%A, %b %d at %I:%M %p')}
-        #             {f'\n📍 {location}' if location else ''}
-        #         """)
         
         job = client.query(insert_query)
         job.result()
