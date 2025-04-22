@@ -273,7 +273,7 @@ def schedule_group_workout(group_id, user_id, workout_datetime, location=None, t
                 '{title.replace("'", "''")}',
                 '{description.replace("'", "''")}',
                 '{workout_datetime.strftime('%Y-%m-%d %H:%M:%S')}',
-                {'NULL' if not location else f"'{location.replace("'", "''")}'"},
+                {'NULL' if not location else f"'{location.replace("''", "''")}'"},
                 20,
                 '{user_id}'
             )
