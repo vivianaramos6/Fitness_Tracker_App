@@ -1,6 +1,11 @@
 streamlit==1.43.0
-protobuf>=3.20,<5.0.0 
-google-cloud-bigquery>=3.21.0,<4.0.0 
+protobuf>=3.20,<5.0.0
+google-cloud-bigquery>=3.21.0,<4.0.0
 google-cloud-aiplatform>=1.50.0
 pytest
 pandas
+db-dtypes>=1.2.0 
+google-auth>=2.14.1
+google-api-core>=2.11.0
+sqlalchemy>=1.4.0 
+pyarrow>=7.0.0 
