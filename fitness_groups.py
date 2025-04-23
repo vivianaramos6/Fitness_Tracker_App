@@ -31,9 +31,11 @@ def get_member_count(client, group_id):
     result = client.query(query).to_dataframe()
     return result.iloc[0]['member_count']
 
-PROJECT_ID = "vivianaramos6techx25"
-DATASET_ID = "ISE"
-client = bigquery.Client(project=PROJECT_ID)
+def get_client():
+    PROJECT_ID = "vivianaramos6techx25"
+    DATASET_ID = "ISE"
+    client = bigquery.Client(project=PROJECT_ID)
+    return bigquery.Client(project=PROJECT_ID)
 
 def get_user_name(user_id):
     try:
@@ -45,6 +47,7 @@ def get_user_name(user_id):
         job_config = bigquery.QueryJobConfig(
             query_parameters=[bigquery.ScalarQueryParameter("user_id", "STRING", user_id)]
         )
+        client = get_client()
         results = client.query(query, job_config=job_config).result()
         row = next(iter(results), None)
         return row.Name if row else "Unknown User"
@@ -69,6 +72,7 @@ def get_group_users(user_id):
         job_config = bigquery.QueryJobConfig(
             query_parameters=[bigquery.ScalarQueryParameter("user_id", "STRING", user_id)]
         )
+        client = get_client()
         results = client.query(query, job_config=job_config).result()
         return [(row.UserId, row.Name) for row in results]
     except Exception as e:
@@ -82,6 +86,7 @@ def get_group_events():
             FROM `{PROJECT_ID}.{DATASET_ID}.GroupEvents`
             ORDER BY EventDate
         """
+        client = get_client()
         results = client.query(query).result()
         return pd.DataFrame([(row.EventId, row.Title, row.EventDate) 
                             for row in results], 
@@ -106,6 +111,7 @@ def create_event(title, event_datetime, duration, user_id, invitees):
                 bigquery.ScalarQueryParameter("event_date", "DATETIME", event_datetime),
             ]
         )
+        client = get_client()
         client.query(query, job_config=job_config).result()
 
         try:
@@ -143,6 +149,7 @@ def is_user_group_admin(user_id, group_id):
                 bigquery.ScalarQueryParameter("group_id", "STRING", group_id),
             ]
         )
+        client = get_client()
         result = client.query(query, job_config=job_config).to_dataframe()
         return not result.empty and result.iloc[0]['IsAdmin']
     except Exception as e:
@@ -151,9 +158,8 @@ def is_user_group_admin(user_id, group_id):
 
 def display_fitness_groups(user_id):
     """Display a centralized group management hub with clear visual differentiation"""
-    
+    client = get_client()
     # Initialize BigQuery client
-    client = bigquery.Client(project="vivianaramos6techx25")
     
     # --- DATABASE QUERIES ---
     # Get all available groups
@@ -417,7 +423,7 @@ def handle_group_membership(user_id, group_id, action):
         group_id: Target group ID
         action: 'join' or 'leave'
     """
-    client = bigquery.Client(project="vivianaramos6techx25")
+    client = get_client()
     
     try:
         if action == 'join':
@@ -499,7 +505,7 @@ def join_group(user_id, group_id):
 def schedule_group_workout(group_id, user_id, workout_datetime, location=None, title="Group Workout", description=""):
     """Handle scheduling of joint workouts for fitness groups"""
     
-    client = bigquery.Client(project="vivianaramos6techx25")
+    client = get_client()
     
     try:
         event_id = f"event_{group_id}_{workout_datetime.strftime('%Y%m%d%H%M')}"
@@ -537,7 +543,7 @@ def schedule_group_workout(group_id, user_id, workout_datetime, location=None, t
 
 def rsvp_to_workout(user_id, event_id):
     """Handle RSVP to a workout event"""
-    client = bigquery.Client(project="vivianaramos6techx25")
+    client = get_client()
     
     try:
         # Check if already RSVP'd
@@ -589,7 +595,7 @@ def has_rsvped(client, user_id, event_id):
 def display_group_page(group_id, user_id):
     """Display an individual group page with members, workout scheduling, and management"""
     
-    client = bigquery.Client(project="vivianaramos6techx25")
+    client = get_client()
     
     # --- DATABASE QUERIES ---
     group_query = f"""
