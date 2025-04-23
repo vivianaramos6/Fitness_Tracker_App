@@ -5,6 +5,9 @@ from datetime import datetime, time as dtime, timezone, timedelta
 import uuid
 import calendar
 
+import os
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/home/aceni31/A3_team_repo1/.vscode/vivianaramos6techx25-b75c1c04b0e4.json"
+
 # Free stock image URLs for different categories
 GROUP_IMAGES = {
     "Cycling": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=300",
