@@ -146,89 +146,6 @@ def is_user_group_admin(user_id, group_id):
         st.error(f"Error checking admin status: {e}")
         return False
 
-
-def show_calendar(events_df):
-    today = datetime.now()
-    current_month = today.month
-    current_year = today.year
-
-    col1, col2 = st.columns(2)
-    with col1:
-        selected_month = st.selectbox("Month", range(1, 13), index=current_month - 1,
-                                      format_func=lambda x: calendar.month_name[x])
-    with col2:
-        selected_year = st.selectbox("Year", range(current_year - 1, current_year + 3), index=1)
-
-    num_days = calendar.monthrange(selected_year, selected_month)[1]
-    first_day = calendar.monthrange(selected_year, selected_month)[0]
-
-    st.subheader(f"📅 {calendar.month_name[selected_month]} {selected_year}")
-
-    days_of_week = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    cols = st.columns(7)
-    for i, day in enumerate(days_of_week):
-        with cols[i]:
-            st.markdown(f"<div style='text-align:center'><strong>{day}</strong></div>", unsafe_allow_html=True)
-
-    day_counter = 1
-    for week in range(6):
-        cols = st.columns(7)
-        for i in range(7):
-            with cols[i]:
-                if (week == 0 and i < first_day) or (day_counter > num_days):
-                    st.markdown(
-                        "<div style='min-height:100px; border:1px solid #f0f0f0; padding:5px;'></div>",
-                        unsafe_allow_html=True)
-                else:
-                    day_events = events_df[
-                        (events_df['EventDate'].dt.day == day_counter) & 
-                        (events_df['EventDate'].dt.month == selected_month) &
-                        (events_df['EventDate'].dt.year == selected_year)
-                    ]
-                    is_today = (day_counter == today.day and selected_month == today.month and selected_year == today.year)
-                    has_event = not day_events.empty
-
-                    if is_today and has_event:
-                        bg_color = "#cceeff"
-                        border_color = "#1890ff"
-                    elif has_event:
-                        bg_color = "#e6ffe6"
-                        border_color = "#66cc66"
-                    elif is_today:
-                        bg_color = "#e6f7ff"
-                        border_color = "#1890ff"
-                    else:
-                        bg_color = "#ffffff"
-                        border_color = "#f0f0f0"
-
-                    event_html = ""
-                    for idx, event in enumerate(day_events.itertuples()):
-                        event_time = event.EventDate.strftime('%H:%M')
-                        title = str(event.Title)
-                        event_html += (
-                            f"<div style='background-color:#4CAF50; color:white; "
-                            f"margin-top:2px; padding:2px; border-radius:3px; "
-                            f"font-size:0.8em; overflow:hidden; text-overflow:ellipsis; "
-                            f"white-space:nowrap;'>{event_time} - {title}</div>"
-                        )
-
-                        # Unique key per event per day
-                        if st.button(f"Delete {title}", key=f"delete_{event.EventId}_{idx}"):
-                            delete_event(event.EventId)
-                            st.rerun()
-
-
-                    st.markdown(
-                        f"<div style='min-height:100px; border:1px solid {border_color}; "
-                        f"background-color:{bg_color}; padding:5px; overflow-y:auto; "
-                        f"font-size:0.85em;'>{event_html}</div>",
-                        unsafe_allow_html=True
-                    )
-                    day_counter += 1
-        if day_counter > num_days:
-            break
-
-
 def display_fitness_groups(user_id):
     """Display a centralized group management hub with clear visual differentiation"""
     
@@ -252,7 +169,7 @@ def display_fitness_groups(user_id):
         WHERE gm.UserId = '{user_id}'
         ORDER BY gm.JoinedDate DESC
     """
-    
+
     try:
         all_groups = client.query(all_groups_query).to_dataframe()
         joined_groups = client.query(joined_groups_query).to_dataframe()
