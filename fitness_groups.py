@@ -31,9 +31,9 @@ def get_member_count(client, group_id):
     result = client.query(query).to_dataframe()
     return result.iloc[0]['member_count']
 
+PROJECT_ID = "vivianaramos6techx25"
+DATASET_ID = "ISE"
 def get_client():
-    PROJECT_ID = "vivianaramos6techx25"
-    DATASET_ID = "ISE"
     client = bigquery.Client(project=PROJECT_ID)
     return bigquery.Client(project=PROJECT_ID)
 
