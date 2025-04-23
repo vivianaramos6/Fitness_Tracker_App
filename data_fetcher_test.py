@@ -9,6 +9,13 @@ import unittest
 import streamlit as st
 from unittest.mock import patch, MagicMock, PropertyMock
 import sys
+from data_fetcher import get_user_achievements
+
+
+import unittest
+from unittest.mock import patch, MagicMock
+import pandas as pd
+
 
 # # sys.modules['google'] = MagicMock()
 # sys.modules['google.cloud'] = MagicMock()
@@ -263,6 +270,85 @@ class TestGetGenAIAdvice(unittest.TestCase):
 
             # Verify the advice_id format
             self.assertTrue(result['advice_id'].startswith(f"adv_{user_id}"))
+
+class TestGetUserAchievements(unittest.TestCase):
+        @patch("data_fetcher.bigquery.Client")
+
+        def test_get_user_achievements(self, mock_client_class):
+            # Arrange
+            mock_client = MagicMock()
+            mock_client_class.return_value = mock_client
+
+            # Sample data to return
+            sample_data = pd.DataFrame({
+                "Name": ["Marathon Finisher", "Early Riser"],
+                "Description": ["Completed a marathon", "Woke up early 5 days in a row"],
+                "EarnedDate": ["2025-03-01", "2025-04-01"]
+            })
+
+            # Mock query().to_dataframe()
+            mock_client.query.return_value.to_dataframe.return_value = sample_data.copy()
+
+            # Act
+            user_id = "user_123"
+            result = get_user_achievements(user_id)
+
+            # Assert
+            self.assertEqual(len(result), 2)
+            self.assertIn("🏆 Marathon Finisher", result["Name"].values)
+            self.assertIn("🏆 Early Riser", result["Name"].values)
+            self.assertListEqual(
+                result["Description"].tolist(),
+                ["Completed a marathon", "Woke up early 5 days in a row"]
+            )            
+
+import unittest
+from unittest.mock import patch, MagicMock
+import pandas as pd
+
+# Mock data
+sample_achievements = pd.DataFrame([
+    {"Name": "Milestone Reached", "Description": "Did something awesome", "EarnedDate": "2025-01-01"}
+])
+sample_empty = pd.DataFrame()
+
+class TestShowGoalsPage(unittest.TestCase):
+    @patch("goals_page.st")  # Patch st where it's used (in goals_page)
+    @patch("goals_page.get_completed_goals")
+    @patch("goals_page.get_weekly_goals")
+    @patch("goals_page.get_group_goals")
+    @patch("goals_page.get_suggested_goals")
+    @patch("goals_page.get_user_achievements")
+    @patch("goals_page.check_and_award_goal_achievements")
+    def test_show_goals_page(
+        self,
+        mock_check_and_award,
+        mock_get_user_achievements,
+        mock_get_suggested_goals,
+        mock_get_group_goals,
+        mock_get_weekly_goals,
+        mock_get_completed_goals,
+        mock_st,  # This is now the Streamlit mock used inside the module
+    ):
+        from goals_page import show_goals_page
+
+        # Return values
+        mock_get_user_achievements.return_value = sample_achievements
+        mock_get_suggested_goals.return_value = sample_empty
+        mock_get_group_goals.return_value = sample_empty
+        mock_get_weekly_goals.return_value = sample_empty
+        mock_get_completed_goals.return_value = sample_empty
+
+        # Use dict-like MagicMock for session_state
+        mock_st.session_state = {}
+
+        # Run the function
+        show_goals_page("user_123")
+
+        # Check it ran as expected
+        mock_check_and_award.assert_called_once_with("user_123")
+        mock_get_user_achievements.assert_called_once_with("user_123")
+        self.assertTrue(mock_st.session_state["achievements_checked"])
 
 if __name__ == "__main__":
     unittest.main()
