@@ -341,3 +341,62 @@ def get_genai_advice(user_id, user_input="Give me fitness advice"):
             'image_url': None,
             'timestamp': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         }
+
+
+
+def get_suggested_goals(user_id):
+    PROJECT_ID = "vivianaramos6techx25"
+    DATASET_ID = "ISE"
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT Title, TargetValue, CurrentValue, StartDate, EndDate
+        FROM ISE.PersonalGoals
+        WHERE UserId = '{user_id}' AND IsCustom = FALSE AND IsCompleted = FALSE
+    """
+    return client.query(query).to_dataframe()
+
+def get_weekly_goals(user_id):
+    PROJECT_ID = "vivianaramos6techx25"
+    DATASET_ID = "ISE"
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT Title, TargetValue, CurrentValue
+        FROM ISE.PersonalGoals
+        WHERE UserId = '{user_id}' AND StartDate >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+    """
+    return client.query(query).to_dataframe()
+
+def get_completed_goals(user_id):
+    PROJECT_ID = "vivianaramos6techx25"
+    DATASET_ID = "ISE"
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT Title, TargetValue, StartDate, EndDate
+        FROM ISE.PersonalGoals
+        WHERE UserId = '{user_id}' AND IsCompleted = TRUE
+    """
+    return client.query(query).to_dataframe()
+
+def get_user_achievements(user_id):
+    PROJECT_ID = "vivianaramos6techx25"
+    DATASET_ID = "ISE"
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT a.Name, a.Description, ua.EarnedDate
+        FROM ISE.UserAchievements ua
+        JOIN ISE.Achievements a ON ua.AchievementId = a.AchievementId
+        WHERE ua.UserId = '{user_id}'
+    """
+    return client.query(query).to_dataframe()
+
+def get_group_goals(user_id):
+    PROJECT_ID = "vivianaramos6techx25"
+    DATASET_ID = "ISE"
+    client = bigquery.Client(project=PROJECT_ID)
+    query = f"""
+        SELECT cg.Description, cgp.Contribution, cg.TargetValue, cgp.RewardClaimed
+        FROM ISE.CommunityGoalProgress cgp
+        JOIN ISE.CommunityGoals cg ON cgp.GoalId = cg.GoalId
+        WHERE cgp.UserId = '{user_id}'
+    """
+    return client.query(query).to_dataframe()     

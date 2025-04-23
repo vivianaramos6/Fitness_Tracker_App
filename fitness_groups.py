@@ -264,6 +264,12 @@ def schedule_group_workout(group_id, user_id, workout_datetime, location=None, t
     try:
         event_id = f"event_{group_id}_{workout_datetime.strftime('%Y%m%d%H%M')}"
         
+        if not location:
+            location_value = 'NULL'
+        else:
+            escaped_location = location.replace("'", "''")
+            location_value = f"'{escaped_location}'"
+        
         insert_query = f"""
             INSERT INTO `vivianaramos6techx25.ISE.GroupEvents`
             (EventId, GroupId, Title, Description, EventDate, Location, MaxParticipants, CreatorId)
@@ -273,7 +279,7 @@ def schedule_group_workout(group_id, user_id, workout_datetime, location=None, t
                 '{title.replace("'", "''")}',
                 '{description.replace("'", "''")}',
                 '{workout_datetime.strftime('%Y-%m-%d %H:%M:%S')}',
-                {'NULL' if not location else f"'{location.replace("''", "''")}'"},
+                {location_value},
                 20,
                 '{user_id}'
             )
