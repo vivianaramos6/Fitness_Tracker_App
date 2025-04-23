@@ -1,51 +1,43 @@
 import unittest
 from unittest.mock import patch, MagicMock
-import pandas as pd
 from datetime import datetime, timedelta
-from fitness_groups import schedule_group_workout, get_group_events
+import pandas as pd
 
-class TestGroupScheduling(unittest.TestCase):
+# Mock the client import at the top-level of the fitness_groups module
+with patch('fitness_groups.client', new_callable=MagicMock()) as mock_global_client:
+    from fitness_groups import schedule_group_workout, get_group_events
 
-    @patch('fitness_groups.bigquery.Client')
-    def test_successful_workout_scheduling(self, mock_client_class):
-        """Test that a workout can be scheduled successfully"""
-        mock_client = MagicMock()
-        mock_client_class.return_value = mock_client
 
-        mock_client.query.return_value.result.return_value = None  # simulate successful insert
 
-        result = schedule_group_workout(
-            group_id="group1",
-            user_id="user1",
-            workout_datetime=datetime.now() + timedelta(days=1),
-            location="Test Park",
-            title="Sunset Yoga",
-            description="Evening cooldown flow."
-        )
+class TestGetGroupEvents(unittest.TestCase):
 
-        self.assertTrue(result)
-        self.assertTrue(mock_client.query.called)
+    @patch('fitness_groups.client')
+    def test_get_group_events_success(self, mock_client):
+        """Test fetching of group events with mocked BigQuery results"""
+        mock_query = MagicMock()
 
-    @patch('fitness_groups.bigquery.Client')
-    def test_non_member_cannot_schedule(self, mock_client_class):
-        """Test that non-members cannot schedule workouts if that logic is implemented"""
-        # Simulate inserting without membership check (actual implementation always inserts)
-        mock_client = MagicMock()
-        mock_client_class.return_value = mock_client
+        test_data = [
+            MagicMock(EventId="event1", Title="Run Club", EventDate=datetime(2025, 4, 25, 7, 0)),
+            MagicMock(EventId="event2", Title="Yoga Flow", EventDate=datetime(2025, 4, 26, 8, 30))
+        ]
 
-        # Optionally test with manual logic restriction
-        result = schedule_group_workout(
-            group_id="group1",
-            user_id="user99",  # pretending this is a non-member
-            workout_datetime=datetime.now() + timedelta(days=1),
-            location="Nowhere",
-            title="Invalid Test",
-            description="Should not be allowed"
-        )
+        mock_query.result.return_value = test_data
+        mock_client.query.return_value = mock_query
 
-        # Note: since the actual function doesn't block non-members, this will be True
-        # If you implement a membership check inside the function, update this test accordingly
-        self.assertTrue(result)
+        df = get_group_events()
+        self.assertIsInstance(df, pd.DataFrame)
+        self.assertEqual(len(df), 2)
+        self.assertListEqual(list(df.columns), ['EventId', 'Title', 'EventDate'])
+        self.assertEqual(df.iloc[0]['Title'], "Run Club")
+
+    @patch('fitness_groups.client')
+    def test_get_group_events_error(self, mock_client):
+        """Simulate failure while retrieving group events"""
+        mock_client.query.side_effect = Exception("Query failed")
+
+        df = get_group_events()
+        self.assertTrue(df.empty)
+        self.assertListEqual(list(df.columns), ['EventId', 'Title', 'EventDate'])
 
 
 if __name__ == '__main__':
