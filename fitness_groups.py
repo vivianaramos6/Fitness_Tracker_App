@@ -1,7 +1,9 @@
 import streamlit as st
 from google.cloud import bigquery
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, time as dtime, timezone, timedelta
+import uuid
+import calendar
 
 # Free stock image URLs for different categories
 GROUP_IMAGES = {
@@ -25,6 +27,214 @@ def get_member_count(client, group_id):
     """
     result = client.query(query).to_dataframe()
     return result.iloc[0]['member_count']
+
+PROJECT_ID = "vivianaramos6techx25"
+DATASET_ID = "ISE"
+client = bigquery.Client(project=PROJECT_ID)
+
+def get_user_name(user_id):
+    try:
+        query = f"""
+            SELECT Name
+            FROM `{PROJECT_ID}.{DATASET_ID}.Users`
+            WHERE LOWER(UserId) = LOWER(@user_id)
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ScalarQueryParameter("user_id", "STRING", user_id)]
+        )
+        results = client.query(query, job_config=job_config).result()
+        row = next(iter(results), None)
+        return row.Name if row else "Unknown User"
+    except Exception as e:
+        st.error(f"Error retrieving user name: {e}")
+        return "Unknown User"
+
+def get_group_users(user_id):
+    try:
+        query = f"""
+            SELECT DISTINCT U.UserId, U.Name
+            FROM `{PROJECT_ID}.{DATASET_ID}.Users` U
+            JOIN `{PROJECT_ID}.{DATASET_ID}.GroupMemberships` GM 
+            ON U.UserId = GM.UserId
+            WHERE GM.GroupId IN (
+                SELECT GroupId
+                FROM `{PROJECT_ID}.{DATASET_ID}.GroupMemberships`
+                WHERE LOWER(UserId) = LOWER(@user_id)
+            )
+            AND LOWER(U.UserId) != LOWER(@user_id)
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ScalarQueryParameter("user_id", "STRING", user_id)]
+        )
+        results = client.query(query, job_config=job_config).result()
+        return [(row.UserId, row.Name) for row in results]
+    except Exception as e:
+        st.error(f"Error retrieving group members: {e}")
+        return []
+
+def get_group_events():
+    try:
+        query = f"""
+            SELECT EventId, Title, EventDate
+            FROM `{PROJECT_ID}.{DATASET_ID}.GroupEvents`
+            ORDER BY EventDate
+        """
+        results = client.query(query).result()
+        return pd.DataFrame([(row.EventId, row.Title, row.EventDate) 
+                            for row in results], 
+                            columns=['EventId', 'Title', 'EventDate'])
+    except Exception as e:
+        st.error(f"Error retrieving events: {e}")
+        return pd.DataFrame([], columns=['EventId', 'Title', 'EventDate'])
+
+def create_event(title, event_datetime, duration, user_id, invitees):
+    try:
+        event_id = str(uuid.uuid4())
+
+        query = f"""
+            INSERT INTO `{PROJECT_ID}.{DATASET_ID}.GroupEvents` 
+            (EventId, Title, EventDate) 
+            VALUES (@event_id, @title, @event_date)
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("event_id", "STRING", event_id),
+                bigquery.ScalarQueryParameter("title", "STRING", title),
+                bigquery.ScalarQueryParameter("event_date", "DATETIME", event_datetime),
+            ]
+        )
+        client.query(query, job_config=job_config).result()
+
+        try:
+            for invitee_id in invitees:
+                join_query = f"""
+                    INSERT INTO `{PROJECT_ID}.{DATASET_ID}.GroupEventInvitees` 
+                    (EventId, UserId) 
+                    VALUES (@event_id, @invitee_id)
+                """
+                join_config = bigquery.QueryJobConfig(
+                    query_parameters=[
+                        bigquery.ScalarQueryParameter("event_id", "STRING", event_id),
+                        bigquery.ScalarQueryParameter("invitee_id", "STRING", invitee_id),
+                    ]
+                )       
+                client.query(join_query, join_config).result()
+        except Exception:
+            pass
+
+        return event_id
+    except Exception as e:
+        st.error(f"Error creating event: {e}")
+        return None
+
+def show_calendar(events_df):
+    today = datetime.now()
+    current_month = today.month
+    current_year = today.year
+
+    col1, col2 = st.columns(2)
+    with col1:
+        selected_month = st.selectbox("Month", range(1, 13), index=current_month - 1,
+                                      format_func=lambda x: calendar.month_name[x])
+    with col2:
+        selected_year = st.selectbox("Year", range(current_year - 1, current_year + 3), index=1)
+
+    num_days = calendar.monthrange(selected_year, selected_month)[1]
+    first_day = calendar.monthrange(selected_year, selected_month)[0]
+
+    st.subheader(f"📅 {calendar.month_name[selected_month]} {selected_year}")
+
+    days_of_week = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    cols = st.columns(7)
+    for i, day in enumerate(days_of_week):
+        with cols[i]:
+            st.markdown(f"<div style='text-align:center'><strong>{day}</strong></div>", unsafe_allow_html=True)
+
+    day_counter = 1
+    for week in range(6):
+        cols = st.columns(7)
+        for i in range(7):
+            with cols[i]:
+                if (week == 0 and i < first_day) or (day_counter > num_days):
+                    st.markdown(
+                        "<div style='min-height:100px; border:1px solid #f0f0f0; padding:5px;'></div>",
+                        unsafe_allow_html=True)
+                else:
+                    day_events = events_df[
+                        (events_df['EventDate'].dt.day == day_counter) & 
+                        (events_df['EventDate'].dt.month == selected_month) &
+                        (events_df['EventDate'].dt.year == selected_year)
+                    ]
+                    is_today = (day_counter == today.day and selected_month == today.month and selected_year == today.year)
+                    has_event = not day_events.empty
+
+                    if is_today and has_event:
+                        bg_color = "#cceeff"
+                        border_color = "#1890ff"
+                    elif has_event:
+                        bg_color = "#e6ffe6"
+                        border_color = "#66cc66"
+                    elif is_today:
+                        bg_color = "#e6f7ff"
+                        border_color = "#1890ff"
+                    else:
+                        bg_color = "#ffffff"
+                        border_color = "#f0f0f0"
+
+                    event_html = ""
+                    for idx, event in enumerate(day_events.itertuples()):
+                        event_time = event.EventDate.strftime('%H:%M')
+                        title = str(event.Title)
+                        event_html += (
+                            f"<div style='background-color:#4CAF50; color:white; "
+                            f"margin-top:2px; padding:2px; border-radius:3px; "
+                            f"font-size:0.8em; overflow:hidden; text-overflow:ellipsis; "
+                            f"white-space:nowrap;'>{event_time} - {title}</div>"
+                        )
+
+                        # Unique key per event per day
+                        if st.button(f"Delete {title}", key=f"delete_{event.EventId}_{idx}"):
+                            delete_event(event.EventId)
+                            st.rerun()
+
+
+                    st.markdown(
+                        f"<div style='min-height:100px; border:1px solid {border_color}; "
+                        f"background-color:{bg_color}; padding:5px; overflow-y:auto; "
+                        f"font-size:0.85em;'>{event_html}</div>",
+                        unsafe_allow_html=True
+                    )
+                    day_counter += 1
+        if day_counter > num_days:
+            break
+
+
+def delete_event(event_id):
+    try:
+        # SQL query to delete the event from the GroupEvents table
+        query = f"""
+            DELETE FROM `{PROJECT_ID}.{DATASET_ID}.GroupEvents`
+            WHERE EventId = @event_id
+        """
+        # Set up the query parameters
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ScalarQueryParameter("event_id", "STRING", event_id)]
+        )
+        
+        # Execute the query
+        client.query(query, job_config=job_config).result()
+        
+        # Optionally, delete any invitees from the GroupEventInvitees table
+        invitees_query = f"""
+            DELETE FROM `{PROJECT_ID}.{DATASET_ID}.GroupEventInvitees`
+            WHERE EventId = @event_id
+        """
+        client.query(invitees_query, job_config=job_config).result()
+
+        st.success("Event successfully deleted.")
+    except Exception as e:
+        st.error(f"Error deleting event: {e}")
+
 
 def display_fitness_groups(user_id):
     """Display a centralized group management hub with clear visual differentiation"""
@@ -68,7 +278,7 @@ def display_fitness_groups(user_id):
     st.title("🏋️ Fitness Groups Hub")
     
     # Tab system for better navigation
-    tab1, tab2 = st.tabs(["My Groups", "Discover Groups"])
+    tab1, tab2, tab3 = st.tabs(["My Groups", "Discover Groups", "Group Scheduling"])
     
     with tab1:
         # MY GROUPS SECTION (joined groups)
@@ -166,7 +376,42 @@ def display_fitness_groups(user_id):
                                     st.success("✓ Joined", icon="✅")
         else:
             st.warning("No groups match your filters")
+    with tab3:
+        st.title("📅 Community Fitness Calendar")
+    
+        user_id = st.text_input("Enter your user ID:", "user1")
 
+        if user_id:
+            user_name = get_user_name(user_id)
+            st.markdown(f"Welcome, **{user_name}**!")
+
+            events_df = get_group_events()
+
+            # Render calendar with events and upcoming events
+            show_calendar(events_df)
+
+            st.subheader("💪 Schedule a New Fitness Event")
+            group_users = get_group_users(user_id)
+
+            with st.form("event_form"):
+                title = st.text_input("Event Title")
+                date = st.date_input("Date", datetime.today())
+                hour = st.number_input("Hour (0-23)", min_value=0, max_value=23, value=12)
+                minute = st.number_input("Minute (0-59)", min_value=0, max_value=59, value=0)
+                duration = st.number_input("Duration (minutes)", min_value=15, max_value=180, value=60)
+                invitee_ids = st.multiselect(
+                    "Invite Group Members",
+                    options=[user[0] for user in group_users],
+                    format_func=lambda x: dict(group_users).get(x, x)
+                )
+                submitted = st.form_submit_button("Create Event")
+
+                if submitted:
+                    event_datetime = datetime.combine(date, datetime.min.time()).replace(hour=hour, minute=minute)
+                    event_id = create_event(title, event_datetime, duration, user_id, invitee_ids)
+                    if event_id:
+                        st.success(f"Event '{title}' created!")   
+        
 def handle_group_membership(user_id, group_id, action):
     """
     Unified function to handle group joining/leaving with improved user feedback
@@ -540,8 +785,9 @@ def display_group_page(group_id, user_id):
                     if st.button("✅ Confirm Delete"):
                         # Implement delete logic
                         st.success("Group deleted successfully")
-                        st.experimental_rerun()
+                        st.rerun()
 
+            
 # def schedule_group_workout(group_id, user_id, workout_datetime, location=None):
 #     """Handle scheduling of joint workouts for fitness groups with user-friendly features"""
     
