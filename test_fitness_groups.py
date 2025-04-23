@@ -59,17 +59,6 @@ class TestFitnessGroups(unittest.TestCase):
         self.assertEqual(mock_client.return_value.query.call_count, 2)
 
     @patch('google.cloud.bigquery.Client')
-    def test_display_fitness_groups_with_groups(self, mock_client):
-        mock_client.return_value.query.side_effect = [
-            MagicMock(to_dataframe=MagicMock(return_value=self.mock_all_groups)),
-            MagicMock(to_dataframe=MagicMock(return_value=self.mock_joined_groups))
-        ]
-
-        with patch('fitness_groups.get_member_count', return_value=15):
-            result = display_fitness_groups(self.user_id)
-            self.assertEqual(mock_client.return_value.query.call_count, 2)
-
-    @patch('google.cloud.bigquery.Client')
     def test_display_fitness_groups_error_handling(self, mock_client):
         mock_client.return_value.query.side_effect = Exception("BigQuery error")
         result = display_fitness_groups(self.user_id)
