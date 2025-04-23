@@ -127,6 +127,26 @@ def create_event(title, event_datetime, duration, user_id, invitees):
         st.error(f"Error creating event: {e}")
         return None
 
+def is_user_group_admin(user_id, group_id):
+    try:
+        query = f"""
+            SELECT IsAdmin
+            FROM `{PROJECT_ID}.{DATASET_ID}.GroupMemberships`
+            WHERE UserId = @user_id AND GroupId = @group_id
+        """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("user_id", "STRING", user_id),
+                bigquery.ScalarQueryParameter("group_id", "STRING", group_id),
+            ]
+        )
+        result = client.query(query, job_config=job_config).to_dataframe()
+        return not result.empty and result.iloc[0]['IsAdmin']
+    except Exception as e:
+        st.error(f"Error checking admin status: {e}")
+        return False
+
+
 def show_calendar(events_df):
     today = datetime.now()
     current_month = today.month
@@ -207,33 +227,6 @@ def show_calendar(events_df):
                     day_counter += 1
         if day_counter > num_days:
             break
-
-
-def delete_event(event_id):
-    try:
-        # SQL query to delete the event from the GroupEvents table
-        query = f"""
-            DELETE FROM `{PROJECT_ID}.{DATASET_ID}.GroupEvents`
-            WHERE EventId = @event_id
-        """
-        # Set up the query parameters
-        job_config = bigquery.QueryJobConfig(
-            query_parameters=[bigquery.ScalarQueryParameter("event_id", "STRING", event_id)]
-        )
-        
-        # Execute the query
-        client.query(query, job_config=job_config).result()
-        
-        # Optionally, delete any invitees from the GroupEventInvitees table
-        invitees_query = f"""
-            DELETE FROM `{PROJECT_ID}.{DATASET_ID}.GroupEventInvitees`
-            WHERE EventId = @event_id
-        """
-        client.query(invitees_query, job_config=job_config).result()
-
-        st.success("Event successfully deleted.")
-    except Exception as e:
-        st.error(f"Error deleting event: {e}")
 
 
 def display_fitness_groups(user_id):
@@ -481,25 +474,8 @@ def display_fitness_groups(user_id):
                                 ):
                                     st.success("Workout scheduled successfully!")
                                     st.rerun()
-                
-                # Admin section for group management
-                admin_groups = joined_groups[joined_groups['IsAdmin']]
-                if not admin_groups.empty:
-                    st.divider()
-                    with st.expander("👑 Admin Tools", expanded=False):
-                        selected_group = st.selectbox(
-                            "Select Group to Manage",
-                            options=admin_groups['GroupId'],
-                            format_func=lambda x: admin_groups[admin_groups['GroupId'] == x]['Name'].values[0]
-                        )
-                        
-                        if st.button("⚠️ Delete Group", type="secondary"):
-                            st.error("Are you sure you want to delete this group? This action cannot be undone.")
-                            confirm = st.text_input("Type 'DELETE' to confirm")
-                            if confirm == "DELETE":
-                                if delete_group(selected_group):
-                                    st.success("Group deleted successfully")
-                                    st.rerun()
+            
+
             except Exception as e:
                 st.error(f"Error loading events: {str(e)}")
                 st.error("Please check if the GroupEvents table exists and contains data")
@@ -509,6 +485,7 @@ def display_fitness_groups(user_id):
                 "https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=500",
                 width=400
             )
+
         
 def handle_group_membership(user_id, group_id, action):
     """
