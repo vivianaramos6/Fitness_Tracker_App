@@ -278,7 +278,7 @@ def display_fitness_groups(user_id):
     st.title("🏋️ Fitness Groups Hub")
     
     # Tab system for better navigation
-    tab1, tab2, tab3 = st.tabs(["My Groups", "Discover Groups", "Group Scheduling"])
+    tab1, tab2, tab3 = st.tabs(["My Groups", "Discover Groups", "Group Calendar"])
     
     with tab1:
         # MY GROUPS SECTION (joined groups)
@@ -376,41 +376,139 @@ def display_fitness_groups(user_id):
                                     st.success("✓ Joined", icon="✅")
         else:
             st.warning("No groups match your filters")
+            
     with tab3:
-        st.title("📅 Community Fitness Calendar")
-    
-        user_id = st.text_input("Enter your user ID:", "user1")
-
-        if user_id:
-            user_name = get_user_name(user_id)
-            st.markdown(f"Welcome, **{user_name}**!")
-
-            events_df = get_group_events()
-
-            # Render calendar with events and upcoming events
-            show_calendar(events_df)
-
-            st.subheader("💪 Schedule a New Fitness Event")
-            group_users = get_group_users(user_id)
-
-            with st.form("event_form"):
-                title = st.text_input("Event Title")
-                date = st.date_input("Date", datetime.today())
-                hour = st.number_input("Hour (0-23)", min_value=0, max_value=23, value=12)
-                minute = st.number_input("Minute (0-59)", min_value=0, max_value=59, value=0)
-                duration = st.number_input("Duration (minutes)", min_value=15, max_value=180, value=60)
-                invitee_ids = st.multiselect(
-                    "Invite Group Members",
-                    options=[user[0] for user in group_users],
-                    format_func=lambda x: dict(group_users).get(x, x)
+        # CALENDAR SECTION
+        st.header("📅 Group Workouts Calendar")
+        
+        if not joined_groups.empty:
+            try:
+                # Display calendar date picker first
+                selected_date = st.date_input(
+                    "Select a date to view events",
+                    datetime.today(),
+                    key="calendar_date"
                 )
-                submitted = st.form_submit_button("Create Event")
-
-                if submitted:
-                    event_datetime = datetime.combine(date, datetime.min.time()).replace(hour=hour, minute=minute)
-                    event_id = create_event(title, event_datetime, duration, user_id, invitee_ids)
-                    if event_id:
-                        st.success(f"Event '{title}' created!")   
+                
+                # Get events for the selected date only (more efficient query)
+                events_query = f"""
+                    SELECT 
+                        e.EventId, 
+                        e.Title, 
+                        e.EventDate, 
+                        e.Location, 
+                        e.Description, 
+                        g.Name as GroupName, 
+                        g.GroupId,
+                        g.Category,
+                        COUNT(gm.UserId) as MemberCount
+                    FROM `vivianaramos6techx25.ISE.GroupEvents` e
+                    JOIN `vivianaramos6techx25.ISE.FitnessGroups` g
+                        ON e.GroupId = g.GroupId
+                    JOIN `vivianaramos6techx25.ISE.GroupMemberships` gm
+                        ON g.GroupId = gm.GroupId
+                    WHERE g.GroupId IN (
+                        SELECT GroupId 
+                        FROM `vivianaramos6techx25.ISE.GroupMemberships` 
+                        WHERE UserId = '{user_id}'
+                    )
+                    AND DATE(e.EventDate) = DATE('{selected_date}')
+                    GROUP BY e.EventId, e.Title, e.EventDate, e.Location, e.Description, g.Name, g.GroupId, g.Category
+                    ORDER BY e.EventDate
+                """
+                
+                events_df = client.query(events_query).to_dataframe()
+                
+                if not events_df.empty:
+                    st.subheader(f"Events on {selected_date.strftime('%A, %B %d, %Y')}")
+                    
+                    for _, event in events_df.iterrows():
+                        # Convert to datetime if not already
+                        event_date = pd.to_datetime(event['EventDate'])
+                        
+                        with st.container(border=True):
+                            cols = st.columns([1, 3])
+                            with cols[0]:
+                                st.image(
+                                    get_group_image(event['Category']),
+                                    width=120
+                                )
+                            with cols[1]:
+                                st.markdown(f"#### {event['Title']}")
+                                st.caption(f"⏰ {event_date.strftime('%I:%M %p')} | 📍 {event['Location']}")
+                                st.caption(f"👥 {event['MemberCount']} group members | 🏷️ {event['GroupName']}")
+                                st.write(event['Description'])
+                                
+                                if st.button(
+                                    "View Group",
+                                    key=f"view_{event['GroupId']}_{event['EventId']}",
+                                    help=f"Go to {event['GroupName']} group page"
+                                ):
+                                    st.session_state.current_group = event['GroupId']
+                                    st.rerun()
+                else:
+                    st.info(f"No events scheduled for {selected_date.strftime('%A, %B %d, %Y')}")
+                # else:
+                #     st.info("No upcoming events found in your groups")
+                    
+                # Schedule new event section
+                st.divider()
+                with st.expander("➕ Schedule New Group Workout", expanded=False):
+                    with st.form("new_workout_form"):
+                        group_id = st.selectbox(
+                            "Select Group",
+                            options=joined_groups['GroupId'],
+                            format_func=lambda x: joined_groups[joined_groups['GroupId'] == x]['Name'].values[0]
+                        )
+                        title = st.text_input("Workout Title*", placeholder="Morning Run, Yoga Session, etc.")
+                        workout_date = st.date_input("Date*", min_value=datetime.today())
+                        workout_time = st.time_input("Time*")
+                        location = st.text_input("Location", placeholder="Central Park, Beachfront, etc.")
+                        description = st.text_area("Description", placeholder="Describe the workout session...")
+                        
+                        if st.form_submit_button("Schedule Workout"):
+                            if not title:
+                                st.error("Title is required")
+                            else:
+                                workout_datetime = datetime.combine(workout_date, workout_time)
+                                if schedule_group_workout(
+                                    group_id,
+                                    user_id,
+                                    workout_datetime,
+                                    location,
+                                    title,
+                                    description
+                                ):
+                                    st.success("Workout scheduled successfully!")
+                                    st.rerun()
+                
+                # Admin section for group management
+                admin_groups = joined_groups[joined_groups['IsAdmin']]
+                if not admin_groups.empty:
+                    st.divider()
+                    with st.expander("👑 Admin Tools", expanded=False):
+                        selected_group = st.selectbox(
+                            "Select Group to Manage",
+                            options=admin_groups['GroupId'],
+                            format_func=lambda x: admin_groups[admin_groups['GroupId'] == x]['Name'].values[0]
+                        )
+                        
+                        if st.button("⚠️ Delete Group", type="secondary"):
+                            st.error("Are you sure you want to delete this group? This action cannot be undone.")
+                            confirm = st.text_input("Type 'DELETE' to confirm")
+                            if confirm == "DELETE":
+                                if delete_group(selected_group):
+                                    st.success("Group deleted successfully")
+                                    st.rerun()
+            except Exception as e:
+                st.error(f"Error loading events: {str(e)}")
+                st.error("Please check if the GroupEvents table exists and contains data")
+        else:
+            st.info("You haven't joined any groups yet. Join groups to see and schedule workouts.")
+            st.image(
+                "https://images.unsplash.com/photo-1538805060514-97d9cc17730c?w=500",
+                width=400
+            )
         
 def handle_group_membership(user_id, group_id, action):
     """
@@ -787,58 +885,3 @@ def display_group_page(group_id, user_id):
                         st.success("Group deleted successfully")
                         st.rerun()
 
-            
-# def schedule_group_workout(group_id, user_id, workout_datetime, location=None):
-#     """Handle scheduling of joint workouts for fitness groups with user-friendly features"""
-    
-#     # Initialize BigQuery client
-#     client = bigquery.Client(project="vivianaramos6techx25")
-    
-#     try:
-#         # Check if user is a member of the group
-#         membership_query = f"""
-#             SELECT COUNT(*) as is_member
-#             FROM `vivianaramos6techx25.ISE.GroupMemberships`
-#             WHERE GroupId = '{group_id}' AND UserId = '{user_id}'
-#         """
-#         membership = client.query(membership_query).to_dataframe()
-        
-#         if membership.empty or membership.iloc[0]['is_member'] == 0:
-#             st.error("You must be a group member to schedule workouts")
-#             return False
-        
-#         # Generate a unique event ID
-#         event_id = f"event_{group_id}_{workout_datetime.strftime('%Y%m%d%H%M')}"
-        
-#         # Insert the workout event
-#         insert_query = f"""
-#             INSERT INTO `vivianaramos6techx25.ISE.GroupEvents`
-#             (EventId, GroupId, Title, Description, EventDate, Location, MaxParticipants)
-#             VALUES (
-#                 '{event_id}',
-#                 '{group_id}',
-#                 'Group Workout',
-#                 'Join your fellow group members for a workout session!',
-#                 '{workout_datetime.strftime('%Y-%m-%d %H:%M:%S')}',
-#                 {'NULL' if not location else f"'{location}'"},
-#                 20  -- Default max participants
-#             )
-#         """
-        
-#         # Execute the query
-#         client.query(insert_query)
-        
-#         # Get group name for notification
-#         group_query = f"""
-#             SELECT Name FROM `vivianaramos6techx25.ISE.FitnessGroups`
-#             WHERE GroupId = '{group_id}'
-#         """
-#         group_name = client.query(group_query).to_dataframe().iloc[0]['Name']
-        
-
-        
-#         return True
-        
-#     except Exception as e:
-#         st.error(f"Error scheduling workout: {str(e)}")
-#         return False
