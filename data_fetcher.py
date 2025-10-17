@@ -314,7 +314,7 @@ def get_genai_advice(user_id, user_input="Give me fitness advice"):
         include_image = len(workouts) < 2
         
         vertexai.init(project=project_id, location="us-central1")
-        model = GenerativeModel("gemini-1.5-flash-002")
+        model = GenerativeModel("gemini-2.0-flash")
         
         #response and instructions for the fitness bot. prompt is extensive because without a detailed prompt
         #the bot would give the same fitness advice each time its asked
