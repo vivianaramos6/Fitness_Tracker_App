@@ -350,7 +350,7 @@ def get_genai_advice(user_id, user_input="Give me fitness advice"):
 def get_suggested_goals(user_id): 
     
     vertexai.init(project="vivianaramos6techx25", location="us-central1")
-    model = GenerativeModel("gemini-1.5-flash-002")
+    model = GenerativeModel("gemini-2.0-flash")
     import pandas as pd
     import streamlit as st
 
@@ -445,7 +445,7 @@ def get_group_goals(user_id):
 
     # Initialize Vertex AI if not already done in your project setup
     vertexai.init(project="vivianaramos6techx25", location="us-central1")
-    model = GenerativeModel("gemini-1.5-flash-002")
+    model = GenerativeModel("gemini-2.0-flash")
     
     client = bigquery.Client(project="vivianaramos6techx25")
 
